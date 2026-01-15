@@ -1,0 +1,29 @@
+PROJECT PROPOSAL QUESTIONS
+===========================
+
+1. Description of the topic of the project
+   An infrastructure degradation management and accountability platform that allows users to document infrastructure issues (similar to Instagram's photo upload model) with location tagging. The platform focuses on holding property associations and building management accountable by maintaining public records of reported issues and automatically notifying responsible parties.
+
+2. Description of the customer/setting for the project
+   Primary users include residents/tenants who report infrastructure issues, property associations and building management companies who need to be held accountable, third-party organizations monitoring infrastructure, and municipalities tracking building conditions and compliance.
+
+3. Salient characteristics of the customer or sponsoring organization
+   Property associations often claim they had no knowledge of infrastructure issues or that they couldn't process all the information in time. They need a centralized system where issues are documented, tracked, and they receive persistent notifications. Residents need an easy way to report issues, and municipalities/third parties need visibility into building conditions and accountability records.
+
+4. Description of the salient characteristics of the application/tool
+   Instagram-like interface where users must take photos in real-time using only the camera (no gallery access) to prevent spoofing and defamation. Photos are automatically linked to locations via geo-location services. The application uses Google search services to identify nearby buildings, and users can select from 2-3 nearby buildings if the location is imprecise (avoiding expensive precision APIs). Users have blog-style accounts without real name requirements. Each building maintains a record of all posts related to it. The platform automatically sends persistent notifications and emails to associations using publicly available contact information. Third parties and municipalities can access and track these records for accountability purposes. This design prevents mass uploading of old/edited images and fake accounts from posting preset galleries of images to damage a building's reputation.
+
+5. What is the background of the project idea? What is the problem?
+   Property associations are responsible for maintaining infrastructure but often claim they had no way of knowing about issues or couldn't process all the information in time, even when residents report problems. There's a lack of accountability and transparency in the infrastructure maintenance process. Residents need a simple way to document issues, and associations need to be held accountable with persistent records and notifications.
+
+6. How is your application/tool different from what already exists?
+   Unlike generic social media platforms or complaint systems, this tool combines Instagram-like ease of use (simple photo upload with location tagging) with specific accountability features. It automatically identifies locations using Google search services, maintains building-specific records, and proactively sends persistent notifications to responsible parties. It also provides transparency for third parties and municipalities to track infrastructure issues and hold associations accountable.
+
+7. What are the implications of the tool you develop?
+   The tool creates a public record of infrastructure issues tied to specific buildings, making it difficult for associations to claim ignorance. It enables accountability through persistent notifications and public visibility. Municipalities and third parties can track building conditions and compliance. This transparency may lead to faster response times from associations and improved infrastructure maintenance overall.
+
+8. Other important contextual issues especially any external constraints placed on the application/tool.
+   The application relies on Google search services for location identification (avoiding expensive precision APIs by allowing users to select from nearby buildings). The app only requires camera access, not gallery access, to ensure photos are taken in real-time at the location, preventing location spoofing and defamation attempts. Contact information for associations must be obtained from publicly available sources. The platform must comply with privacy regulations regarding user-uploaded content and location data. There may be legal considerations around sending automated notifications and maintaining public records of building issues. Account verification is minimal (blog-style accounts without real name requirements) since the geo-location and real-time photo requirement serve as the primary verification mechanism.
+
+9. What programming language(s) will be utilized for the project?
+   [To be determined - consider web technologies for the Instagram-like interface, backend for data management, and integration with Google search services APIs]
