@@ -79,7 +79,20 @@ Florida International University
 \section{Introduction}
 
 \subsection{Purpose}
-The Software Design Document describes the architecture and system design for Infrastructure Degradation Management Platform, a mobile and web application for documenting infrastructure issues. The Infrastructure Degradation Management Platform is designed to help residents report infrastructure problems and hold property associations accountable. This document is intended for Project Managers, Software Engineers, and anyone else who will be involved in the implementation of the system.
+
+The Software Design Document describes the architecture and system design for StructSure - Infrastructure Degradation Management Platform. This document is intended for Project Managers, Software Engineers, and anyone else who will be involved in the implementation of the system.
+
+\subsubsection{Stakeholders and Context}
+
+Primary users include residents/tenants who report infrastructure issues, property associations and building management companies who need to be held accountable, third-party organizations monitoring infrastructure, and municipalities tracking building conditions and compliance. Property associations often claim they had no knowledge of infrastructure issues or that they couldn't process all the information in time. They need a centralized system where issues are documented, tracked, and they receive persistent notifications. Residents need an easy way to report issues, and municipalities/third parties need visibility into building conditions and accountability records.
+
+\subsubsection{Key Features and Differentiation}
+
+Unlike generic social media platforms or complaint systems, this tool combines Instagram-like ease of use with specific accountability features. The application requires real-time photo capture using only the camera (no gallery access) to prevent spoofing and defamation. Photos are automatically linked to locations via geo-location services. The system uses Google Places API to identify nearby buildings, allowing users to select from 2-3 nearby buildings if the location is imprecise. Users have blog-style accounts without real name requirements. Each building maintains a record of all posts related to it. The platform automatically sends persistent notifications and emails to associations using publicly available contact information. This design prevents mass uploading of old/edited images and fake accounts from posting preset galleries to damage a building's reputation.
+
+\subsubsection{Expected Impact}
+
+The tool creates a public record of infrastructure issues tied to specific buildings, making it difficult for associations to claim ignorance. It enables accountability through persistent notifications and public visibility. Municipalities and third parties can track building conditions and compliance. This transparency may lead to faster response times from associations and improved infrastructure maintenance overall.
 
 \subsection{Scope}
 
