@@ -1,0 +1,32 @@
+graph TB
+    subgraph Database["Database Layer"]
+        PostgreSQL[("PostgreSQL")]
+        Redis[("Redis")]
+    end
+    
+    subgraph Backend["Back-End"]
+        Misskey[Misskey<br/>Node.js/TypeScript]
+        PythonAPI[Python API Wrapper]
+    end
+    
+    subgraph Frontend["Front-End"]
+        MobileApp[React Native Mobile App]
+        Expo[Expo SDK]
+    end
+    
+    subgraph External["External Services"]
+        Cloudinary[Cloudinary]
+        GooglePlaces[Google Places API]
+        SendGrid[SendGrid]
+        FirebaseAuth[Firebase Auth]
+    end
+    
+    PostgreSQL <-->|JSON Data| Misskey
+    Redis <-->|Caching| Misskey
+    MobileApp <-->|HTTP/HTTPS| PythonAPI
+    PythonAPI <-->|API Calls| Misskey
+    MobileApp -->|Photo Upload| Cloudinary
+    MobileApp -->|Building Search| GooglePlaces
+    MobileApp -->|Authentication| FirebaseAuth
+    Misskey -->|Email Notifications| SendGrid
+    MobileApp --> Expo

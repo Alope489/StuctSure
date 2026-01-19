@@ -1,0 +1,62 @@
+sequenceDiagram
+    participant User
+    participant MobileApp
+    participant Camera as Camera API
+    participant GPS as Location API
+    participant Cloudinary
+    participant GooglePlaces as Google Places API
+    participant MisskeyBackend
+    participant Database as PostgreSQL
+    participant SendGrid
+    participant Association
+
+    User->>MobileApp: Open camera to report issue
+    MobileApp->>Camera: Request camera access
+    Camera-->>MobileApp: Camera permission granted
+    MobileApp->>GPS: Request location permission
+    GPS-->>MobileApp: Location permission granted
+    
+    User->>MobileApp: Capture photo
+    MobileApp->>GPS: Capture GPS coordinates
+    GPS-->>MobileApp: Return lat/lng coordinates
+    MobileApp->>MobileApp: Extract EXIF metadata
+    
+    MobileApp->>GooglePlaces: Query nearby buildings (lat, lng)
+    GooglePlaces-->>MobileApp: Return 2-3 building options
+    
+    MobileApp->>User: Display building selection options
+    User->>MobileApp: Select building
+    
+    MobileApp->>User: Request issue category/description
+    User->>MobileApp: Enter issue details
+    
+    MobileApp->>Cloudinary: Upload photo with metadata
+    Note over MobileApp,Cloudinary: Include EXIF timestamp,<br/>location data, upload preset
+    Cloudinary-->>MobileApp: Return photo URL
+    
+    MobileApp->>MisskeyBackend: Create post request
+    Note over MobileApp,MisskeyBackend: Include photo URL, building ID,<br/>location, category, user ID
+    
+    MisskeyBackend->>MisskeyBackend: Validate photo metadata
+    MisskeyBackend->>Database: Check if building exists
+    alt Building does not exist
+        MisskeyBackend->>Database: Create new building record
+    else Building exists
+        MisskeyBackend->>Database: Update building last_updated
+    end
+    
+    MisskeyBackend->>Database: Create post with building association
+    Database-->>MisskeyBackend: Return post ID
+    
+    MisskeyBackend->>Database: Lookup association contact info
+    Database-->>MisskeyBackend: Return association email
+    
+    MisskeyBackend->>SendGrid: Send notification email
+    Note over MisskeyBackend,SendGrid: Include building info,<br/>issue details, photo link
+    SendGrid->>Association: Deliver email notification
+    Association-->>SendGrid: Email read receipt (optional)
+    
+    MisskeyBackend->>Database: Log notification status
+    MisskeyBackend-->>MobileApp: Return post creation success
+    
+    MobileApp->>User: Display confirmation message

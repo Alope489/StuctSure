@@ -1,0 +1,451 @@
+\documentclass[12pt]{article}
+\usepackage[american]{babel}
+\usepackage{apacite}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{letterpaper, margin=1in}
+
+% Reduce whitespace around figures
+\setlength{\intextsep}{10pt}
+\setlength{\floatsep}{10pt}
+\setlength{\textfloatsep}{10pt}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+
+\vspace*{1cm}
+
+{\Huge\textbf{Software Design Document}}
+
+\vspace{0.5cm}
+
+{\Large StructSure - Infrastructure degradation manager}
+
+\vspace{2cm}
+
+{\large Version 1.0}
+
+\vspace{3cm}
+
+StructSure Team:\\
+Andres Stephen Lopez\\
+Nicole Fonseca\\
+Logan Pritchard\\
+Grace Hechevarria
+
+\vspace{3cm}
+
+Professor: Charlyne Walker
+
+\vspace{0.5cm}
+
+Florida International University
+
+\vfill
+
+\date{\today}
+
+\end{titlepage}
+
+\newpage
+
+\section*{Revisions}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|p{2cm}|p{4.5cm}|p{4cm}|l|}
+\hline
+\textbf{Version} & \textbf{Primary Author(s)} & \textbf{Description of Version} & \textbf{Date Completed} \\
+\hline
+1.0 & \raggedright Andres Stephen Lopez\\ Nicole Fonseca\\ Logan Pritchard\\ Grace Hechevarria & Initial Release & \today \\
+\hline
+\end{tabular}
+\end{table}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+
+\subsection{Purpose}
+The Software Design Document describes the architecture and system design for Infrastructure Degradation Management Platform, a mobile and web application for documenting infrastructure issues. The Infrastructure Degradation Management Platform is designed to help residents report infrastructure problems and hold property associations accountable. This document is intended for Project Managers, Software Engineers, and anyone else who will be involved in the implementation of the system.
+
+\subsection{Scope}
+
+This document describes the implementation details of the Infrastructure Degradation Management Platform. The system will consist of six major components: Photo Capture, Building Management, Notification System, Database, Authentication, and Public Access. Each of the components will be explained in detail in this Software Design Document.
+
+\subsection{Definitions, Acronyms and Abbreviations}
+
+\begin{tabular}{|p{3cm}|p{10cm}|}
+\hline
+\textbf{Acronym} & \textbf{Meaning} \\
+\hline
+SDD & Software Design Document \\
+API & Application Programming Interface \\
+EXIF & Exchangeable Image File Format \\
+GPS & Global Positioning System \\
+SDK & Software Development Kit \\
+\hline
+\end{tabular}
+
+\subsection{References}
+\begin{itemize}
+    \item Google Places API Documentation
+    \item Misskey GitHub Repository: https://github.com/misskey-dev/misskey
+    \item Expo Camera Documentation: https://docs.expo.dev/versions/latest/sdk/camera/
+    \item Cloudinary Documentation: https://cloudinary.com/documentation/image\_upload\_api\_reference
+    \item SendGrid API Documentation: https://docs.sendgrid.com/api-reference
+    \item Firebase Authentication Documentation: https://firebase.google.com/docs/auth
+\end{itemize}
+
+\newpage
+
+\section{System Overview}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth, keepaspectratio]{system/System_overview.png}
+\caption{System Architecture Diagram}
+\label{fig:system_architecture}
+\end{figure}
+
+Figure \ref{fig:system_architecture} above represents the architectural structure chosen for the development of the Infrastructure Degradation Management Platform. The system follows a three-tier architecture consisting of a database layer, back-end layer, and front-end layer.
+
+The database layer utilizes PostgreSQL for persistent data storage of users, buildings, and reported issues, while Redis provides caching capabilities for improved performance. The back-end layer is built on Misskey, a Node.js and TypeScript-based social networking platform that provides fast, efficient infrastructure with built-in user management, post/timeline features, and database integration. To accommodate team members more familiar with Python, a Python API wrapper interfaces with the Misskey backend, allowing Python-based development while maintaining the core Misskey functionality.
+
+The front-end layer consists of a React Native mobile application built with the Expo SDK, which provides camera and location APIs for photo capture and GPS coordinate retrieval. The mobile app communicates with the back-end through the Python API wrapper via HTTP/HTTPS requests.
+
+The system integrates with several external services: Cloudinary for photo storage and processing, Google Places API for building identification based on GPS coordinates, Firebase Authentication for user account management, and SendGrid for email notifications to property associations. Currently, the notification system sends emails to associations when new issues are reported, though this can be extended to support additional notification methods in the future.
+
+Storing information about users, buildings, and reported issues enables the system to maintain building records, track issue timelines, and manage notification history. User information enables the system to maintain user profiles and keep records of their reported issues.
+
+Additionally, by following this architecture and structure, the system can be extended into additional features such as municipality dashboards, public record exports, and enhanced notification systems beyond email. However, this is out of the scope of this project and will be addressed in a future version.
+
+\section{System Components}
+
+\subsection{Decomposition Description}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth, keepaspectratio]{architecture/Decomposition.png}
+\caption{System Decomposition Diagram}
+\label{fig:decomposition}
+\end{figure}
+
+Figure \ref{fig:decomposition} above shows a top-down description of how the application is expected to work and how components will interact with one another. This logical component view complements the technology implementation view described in Section 2. The system consists of several key components:
+
+The \textbf{UI Controller} is the main entry point for users, implemented as a React Native mobile application with the Expo SDK. It provides methods for capturing photos/videos, attaching location data, submitting reports, viewing status, and managing notifications.
+
+The \textbf{StructSure Core} serves as the central orchestrator, implemented using the Misskey backend framework with a Python API wrapper. It coordinates interactions between all system components and manages the overall application flow.
+
+The \textbf{Reporting API} handles report management and is implemented as part of the Misskey backend with Python API interfaces. It provides methods for creating reports, updating reports, adding evidence, listing reports, and exporting/sharing reports.
+
+The \textbf{Session Manager} manages user authentication, implemented using Firebase Authentication. It provides methods for sign up, login, logout, and user validation.
+
+The \textbf{Geo/Map Controller} handles geographical and map-related operations, integrating with the Google Places API. It provides methods to render maps, add markers, and show directions for building identification.
+
+The \textbf{Resident Profile} manages resident-specific data including identity, address, association information, and notification preferences. This component utilizes the user management capabilities of Misskey.
+
+The \textbf{Degradation Analyzer} performs analysis on reported issues to assess severity, detect duplicates, and prioritize cases. This component implements custom logic within the Misskey backend to analyze infrastructure degradation patterns.
+
+The \textbf{Database Manager} handles all data persistence, implemented using PostgreSQL for persistent storage and Redis for caching. It provides methods to add/update users and reports, retrieve reports, and delete reports.
+
+\subsection{Dependency Description}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth, keepaspectratio]{architecture/Dependency.png}
+\caption{System Dependency Diagram}
+\label{fig:dependency}
+\end{figure}
+
+Figure \ref{fig:dependency} above represents the component diagram of the system and how each module is dependent on another for its functionality. This diagram illustrates the logical flow and dependencies between components, which are implemented using the technology stack described in Section 2.
+
+The UI Controller, implemented as a React Native mobile application, initiates user interactions and communicates with the StructSure Core, which serves as the central processing unit implemented using Misskey with a Python API wrapper. The StructSure Core orchestrates interactions with specialized components: the Reporting API for managing issue reports, the Session Manager (Firebase Authentication) for user authentication, the Geo/Map Controller (Google Places API integration) for location and mapping services, and the Degradation Analyzer for analyzing reported infrastructure issues.
+
+The Session Manager handles user authentication through Firebase Authentication and communicates directly with the Database Manager (PostgreSQL) to store and retrieve user session data. The Geo/Map Controller processes location information through the Google Places API and stores geographical data in the Database Manager. The Degradation Analyzer processes reported issues and interacts with the Resident Profile component, which manages resident information using Misskey's user management features and also stores data in the Database Manager.
+
+The Reporting API, implemented through the Misskey backend and Python API wrapper, creates report posts that are stored in the Database Manager. When photos are captured through the UI Controller, they are uploaded to Cloudinary for storage and processing. When new issue reports are created, the system retrieves association contact information from the database and sends email notifications via SendGrid.
+
+The Database Manager serves as the central data persistence layer, implemented using PostgreSQL for persistent storage and Redis for caching. It receives data from the Session Manager, Geo/Map Controller, and Resident Profile components. All user data, building records, reported issues, and associated information are stored in the database to maintain system state and enable retrieval of historical data.
+
+For detailed dependency information, see Dependency\_Description.md.
+
+\subsection{Interface Description}
+
+\subsubsection{UI Controller Component}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/UI_Controller.png}
+\caption{UI Controller Interface}
+\label{fig:ui_controller}
+\end{figure}
+
+Figure \ref{fig:ui_controller} above shows the UI Controller interface. The UI Controller communicates with the StructSure Core via HTTP/HTTPS requests through the Python API wrapper, routing user actions, photo data, location information, and report details.
+
+\subsubsection{Session Manager and User Authentication}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/Session_Manager.png}
+\hfill
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/user_auth.png}
+\caption{Session Manager and User Authentication Interfaces}
+\label{fig:session_manager}
+\end{figure}
+
+Figure \ref{fig:session_manager} above shows the Session Manager authentication interface. The StructSure Core requests authentication status from the Session Manager before allowing system access. Unauthenticated users are redirected to the login screen, and the Session Manager validates credentials throughout the session.
+
+\subsubsection{Photo Capture Authentication}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/photo_auth.png}
+\caption{Photo Capture Authentication Interface}
+\label{fig:photo_auth}
+\end{figure}
+
+Figure \ref{fig:photo_auth} above shows the Photo Capture Authentication interface. This interface handles authentication requirements specific to photo capture functionality, ensuring users are properly authenticated before capturing and uploading photos of infrastructure issues.
+
+\subsubsection{Building Identification and Tagging}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/Building_identification_tagging.png}
+\caption{Building Identification Interface}
+\label{fig:building_id}
+\end{figure}
+
+Figure \ref{fig:building_id} above shows the Building Identification interface. When photos include location data, the system queries nearby buildings and presents 2-3 options for user selection. Selected buildings are stored and associated with reported issues.
+
+\subsubsection{Issue Management}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/Issue_Management.png}
+\caption{Issue Management Interface}
+\label{fig:issue_management}
+\end{figure}
+
+Figure \ref{fig:issue_management} above shows the Issue Management interface. Reports include photo URLs, building associations, GPS coordinates, timestamps, and user information. Reports can be categorized, assigned severity ratings, and tracked for status updates.
+
+\subsubsection{Resident Profile}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/Resident_Profile.png}
+\caption{Resident Profile Interface}
+\label{fig:resident_profile}
+\end{figure}
+
+Figure \ref{fig:resident_profile} above shows the Resident Profile interface for managing resident identity, address, association information, and notification preferences. Profiles are linked to reported issues.
+
+\subsubsection{Degradation Analyzer}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/Dergradation_Analyzer.png}
+\caption{Degradation Analyzer Interface}
+\label{fig:degradation_analyzer}
+\end{figure}
+
+Figure \ref{fig:degradation_analyzer} above shows the Degradation Analyzer interface for assessing issue severity, detecting duplicates, and prioritizing cases. The analyzer interacts with the Resident Profile component to update relevant data.
+
+\subsubsection{Association Management}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/association management.png}
+\caption{Association Management Interface}
+\label{fig:association_management}
+\end{figure}
+
+Figure \ref{fig:association_management} above shows the Association Management interface. The current implementation sends email notifications via SendGrid when new issues are reported. Advanced features such as persistent scheduling, escalation workflows, and comprehensive dashboards are outside the scope of this project, as mentioned in Section 2.
+
+\subsubsection{Public Visibility}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.2\textheight, keepaspectratio]{architecture/public_visibility.png}
+\caption{Public Visibility Interface}
+\label{fig:public_visibility}
+\end{figure}
+
+Figure \ref{fig:public_visibility} above shows the Public Visibility interface. Features such as public building records view, municipality dashboards, export functionality, and enhanced search capabilities are outside the scope of the current work but we will aim to add them in this iteration.
+
+\subsection{Module Interfaces}
+
+Module interfaces define the specific function calls and data structures used for communication between components. Detailed interface specifications will be defined during implementation based on the component relationships described above.
+
+\subsection{User Interfaces (GUI)}
+
+\subsubsection{Start Screen}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/start.png}
+\caption{Start/Landing Screen}
+\label{fig:start_screen}
+\end{figure}
+
+Figure \ref{fig:start_screen} above shows the start/landing screen of the mobile application. First time and returning users are presented with this screen, which serves as the entry point for authentication and system access.
+
+\subsubsection{Homepage}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/homepage.png}
+\qquad
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/homepage-profile.png}
+\caption{Main Homepage and Homepage with Profile View}
+\label{fig:homepage}
+\end{figure}
+
+Figure \ref{fig:homepage} above shows the main homepage and homepage with profile view. The main homepage provides navigation to the camera interface, user profile, notifications, and search functionality. The UI Controller presents this dashboard after successful authentication through the Session Manager. The homepage with profile view integrates the Resident Profile component, showing user identity and notification preferences alongside the main navigation.
+
+\subsubsection{Photo Capture and Issue Creation}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/camera.png}
+\qquad
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/post.png}
+\caption{Camera Capture and Issue/Post Creation Screens}
+\label{fig:photo_workflow}
+\end{figure}
+
+Figure \ref{fig:photo_workflow} above shows the camera capture interface and issue/post creation screen. Users can capture photos of infrastructure issues through the camera screen. Once a photo is captured, the system automatically captures GPS coordinates through the Geo/Map Controller. The photo capture is handled by the Expo SDK camera API as described in Section 2. After capturing a photo with location data, users can categorize the issue (e.g., structural, electrical, plumbing), provide an optional description, and select a severity rating on the post creation screen. This interface interacts with the Reporting API through the StructSure Core to create issue posts associated with buildings.
+
+\subsubsection{User Profile Screen}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/user.png}
+\caption{User Profile Screen}
+\label{fig:user_profile}
+\end{figure}
+
+Figure \ref{fig:user_profile} above shows the user profile screen. This interface displays the Resident Profile information including identity, address, association information, and notification preferences. Profile data is managed through the StructSure Core and stored in the Database Manager.
+
+\subsubsection{Notifications Screen}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/notifications.png}
+\caption{Notifications Screen}
+\label{fig:notifications}
+\end{figure}
+
+Figure \ref{fig:notifications} above shows the notifications screen. This interface displays notifications related to reported issues, association responses, and system updates. The UI Controller retrieves notification data through the StructSure Core, which manages communication with the notification system.
+
+\subsubsection{Search and Building History}
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/search-by-building.png}
+\qquad
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/search-by-map.png}
+\caption{Search by Building and Search by Map Interfaces}
+\label{fig:search_interfaces}
+\end{figure}
+
+Figure \ref{fig:search_interfaces} above shows the search interfaces. Users can search for buildings by name or address to view associated infrastructure issues, utilizing the Geo/Map Controller and Database Manager to retrieve building information. Users can also explore infrastructure issues by location on a map view, which integrates with the Google Places API through the Geo/Map Controller to display buildings and their associated issues geographically.
+
+\begin{figure}[H]
+\centering
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/search-building-history.png}
+\qquad
+\includegraphics[height=0.25\textheight, keepaspectratio]{UI/search-review-building-history.png}
+\caption{Building History Search and Review Interfaces}
+\label{fig:building_history}
+\end{figure}
+
+Figure \ref{fig:building_history} above shows the building history search and review interfaces. The search results screen displays reported issues associated with specific buildings, with data provided by the Reporting API through the StructSure Core from the Database Manager. The review interface displays detailed building issue timelines, showing all reported issues for a selected building in chronological order. Each issue displays the photo, timestamp, category, and current status. Users can filter issues by date, category, or status. This functionality is implemented through the Reporting API and retrieves data from the Database Manager.
+
+\newpage
+\section{Detailed Design}
+
+\textbf{Sequence Diagrams}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, keepaspectratio]{system/sequence_diagram_SWE_2026.png}
+    \caption{Sequence diagram showing the photo upload and building association workflow}
+    \label{fig:sequence_diagram}
+\end{figure}
+
+\textbf{Pseudocode}
+
+\begin{verbatim}
+User opens camera interface
+Request camera permission from device
+If permission granted:
+    Display camera preview
+    Wait for user to tap capture button
+    Capture photo from camera
+    Request location permission from device
+    If location permission granted:
+        Get current GPS coordinates
+        Extract EXIF metadata from photo
+        Upload photo to Cloudinary with metadata
+        Query Google Places API with GPS coordinates
+        Display nearby building options to user
+        Wait for user to select building
+        Create issue post with photo URL, building ID, and metadata
+        Store post in database
+        Trigger notification to association
+    Else:
+        Display error: Location permission required
+Else:
+    Display error: Camera permission required
+\end{verbatim}
+
+\subsection{Data Detailed Design}
+
+The system database extends Misskey's existing schema with the following main tables:
+
+\begin{itemize}
+    \item \textbf{Buildings Table}: Stores building information including name, address, GPS coordinates, Google Place ID, and association contact information.
+    \item \textbf{Posts Table (Extended)}: Misskey's posts table extended with building association, issue category, severity rating, status, and location data.
+    \item \textbf{Notifications Table}: Tracks email notifications sent to associations including recipient, timestamp, delivery status, and retry information.
+\end{itemize}
+
+\subsection{RTM}
+
+\begin{tabular}{|p{3cm}|p{6cm}|p{4cm}|p{3cm}|}
+\hline
+\textbf{Requirement-ID} & \textbf{Requirement Description} & \textbf{Design Component} & \textbf{Test-Case \#} \\
+\hline
+FR-1 & User account creation with blog-style registration & Session Manager, User Profile & TBD \\
+\hline
+FR-2 & Camera-only photo capture (no gallery access) & Photo Capture Component & TBD \\
+\hline
+FR-3 & Real-time geo-location capture and tagging & Photo Capture Component, Building Management & TBD \\
+\hline
+FR-4 & Building identification via Google Places API & Building Management Component & TBD \\
+\hline
+FR-5 & Issue post creation linked to buildings & Photo Capture Component, Database Manager & TBD \\
+\hline
+FR-6 & Automated association notifications & Notification System & TBD \\
+\hline
+FR-7 & Public building records view & Public Access Component & TBD \\
+\hline
+FR-8 & Municipality dashboard & Public Access Component & TBD \\
+\hline
+FR-9 & Photo validation and abuse prevention & Photo Capture Component, Validation Module & TBD \\
+\hline
+\end{tabular}
+
+\end{document}
