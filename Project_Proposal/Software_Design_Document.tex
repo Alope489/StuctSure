@@ -3,11 +3,16 @@
 \usepackage{apacite}
 \usepackage{geometry}
 \usepackage{graphicx}
+\usepackage[hyphens]{url}
+\urlstyle{same}
 \usepackage{hyperref}
 \usepackage{float}
 \usepackage{placeins}
 \usepackage{enumitem}
 \usepackage{array}
+\usepackage{booktabs}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 
 \geometry{letterpaper, margin=1in}
 
@@ -31,7 +36,7 @@
 
 \vspace{2cm}
 
-{\large Version 1.0}
+{\large Version 1.1}
 
 \vspace{3cm}
 
@@ -65,7 +70,9 @@ Florida International University
 \hline
 \textbf{Version} & \textbf{Primary Author(s)} & \textbf{Description of Version} & \textbf{Date Completed} \\
 \hline
-1.0 & \raggedright Andres Stephen Lopez\\ Nicole Fonseca\\ Logan Pritchard\\ Grace Hechavarria & Initial Release & \today \\
+1.0 & \raggedright Andres Stephen Lopez\\ Nicole Fonseca\\ Logan Pritchard\\ Grace Hechavarria & Initial Release & January 18, 2026 \\
+\hline
+1.1 & \raggedright Andres Stephen Lopez\\ Nicole Fonseca\\ Logan Pritchard\\ Grace Hechavarria & Added Section 5, Extended Motivation and Acknowledgments & February 7, 2026 \\
 \hline
 \end{tabular}
 \end{table}
@@ -82,15 +89,23 @@ Florida International University
 
 The Software Design Document describes the architecture and system design for StructSure - Infrastructure Degradation Management Platform. This document is intended for Project Managers, Software Engineers, and anyone else who will be involved in the implementation of the system.
 
-\subsubsection{Stakeholders and Context}
+\subsection{Customer, Setting, Sponsoring Organization, and Constraints}
 
-Primary users include residents/tenants who report infrastructure issues, property associations and building management companies who need to be held accountable, third-party organizations monitoring infrastructure, and municipalities tracking building conditions and compliance. Property associations often claim they had no knowledge of infrastructure issues or that they couldn't process all the information in time. They need a centralized system where issues are documented, tracked, and they receive persistent notifications. Residents need an easy way to report issues, and municipalities/third parties need visibility into building conditions and accountability records.
+The primary customer for this project is the end user: residents, tenants, and members of the public who report or view infrastructure issues, as well as property associations, building management, and governing bodies who need visibility and accountability. The formal setting is a course project for the Advanced Software Engineering course at Florida International University. The pilot and target environment is Miami, with a focus on buildings in the Miami area, including office buildings, condominiums, and other multi-occupancy or managed structures regardless of HOA status. Single-family homes are not the primary focus, although the application technically supports reporting for any building type.
 
-\subsubsection{Key Features and Differentiation}
+There is no formal external sponsor. The project is requested and overseen by the course instructor named in this document. The sponsoring organization is the university (Florida International University). Key constraints include the semester timeline, budget limitations (some APIs are not free, others are not open source, and documentation quality varies), and the deliverable expectations: a working prototype, a demo, and documentation. An important contextual constraint is the risk of abuse: malicious users may attempt to use the application to publicly humiliate, shame, or slander individuals or entities without just cause. The system must mitigate these effects and prevent users from exploiting vulnerabilities to do so. At minimum, the design includes camera-only capture (no bulk or historical uploads), submission limits, duplicate detection, and careful handling of user identity and building data to reduce opportunities for abuse while preserving accountability and transparency.
 
-Unlike generic social media platforms or complaint systems, this tool combines Instagram-like ease of use with specific accountability features. The application requires real-time photo capture using only the camera (no gallery access) to prevent spoofing and defamation. Photos are automatically linked to locations via geo-location services. The system uses Google Places API to identify nearby buildings, allowing users to select from 2-3 nearby buildings if the location is imprecise. Users have blog-style accounts without real name requirements. Each building maintains a record of all posts related to it. The platform automatically sends persistent notifications and emails to associations using publicly available contact information. This design prevents mass uploading of old/edited images and fake accounts from posting preset galleries to damage a building's reputation.
+\subsection{Problem, Background, and Stakeholders}
 
-\subsubsection{Expected Impact}
+In Florida, the Surfside building collapse cost many lives and could have been avoided. Similarly, there are many cases of residents being poisoned by mold, injured due to negligence, or otherwise harmed. It is unacceptable that responsible parties can avoid accountability by claiming they were unaware. This system not only makes it impossible for managing bodies to claim ignorance with issues being documented, tracked, and notifications being sent, but also ensures that governing bodies are informed in a public fashion. No one can sweep problems under the rug; all negligent parties can be held accountable, whether through governing body action or public awareness.
+
+Primary users (stakeholders) include residents and tenants who report infrastructure issues, property associations and building management companies who need to be held accountable, third-party organizations monitoring infrastructure, and municipalities tracking building conditions and compliance. Property associations often claim they had no knowledge of infrastructure issues or that they could not process all the information in time. They need a centralized system where issues are documented, tracked, and they receive persistent notifications. Residents need an easy way to report issues; municipalities and third parties need visibility into building conditions and accountability records.
+
+\subsection{Application Overview: Characteristics, Features, Differentiation, and Impact}
+
+The application is characterized by: (1) \textbf{mobile-first/native}, a React Native (Expo) app as the primary interface; (2) \textbf{camera-only capture}, no gallery or file upload, so only real-time photos can be submitted to reduce spoofing and abuse; and (3) \textbf{building-linked issue records}, each report tied to a specific building via location and optional building selection, so that issues are documented per building and visible to residents, associations, and the public.
+
+Unlike generic social media platforms or complaint systems, this tool combines Instagram-like ease of use with specific accountability features. The application requires real-time photo capture using only the camera (no gallery access) to prevent spoofing and defamation. Photos are automatically linked to locations via geo-location services. The system uses Google Places API to identify nearby buildings, allowing users to select from two to three nearby buildings if the location is imprecise. Users have blog-style accounts without real name requirements. Each building maintains a record of all posts related to it. The platform automatically sends persistent notifications and emails to associations using publicly available contact information. This design prevents mass uploading of old or edited images and fake accounts from posting preset galleries to damage a building's reputation.
 
 The tool creates a public record of infrastructure issues tied to specific buildings, making it difficult for associations to claim ignorance. It enables accountability through persistent notifications and public visibility. Municipalities and third parties can track building conditions and compliance. This transparency may lead to faster response times from associations and improved infrastructure maintenance overall.
 
@@ -112,17 +127,26 @@ SDK & Software Development Kit \\
 \hline
 \end{tabular}
 
+\subsection{Acknowledgements}
+
+We acknowledge the use of Cursor IDE, Anthropic Claude (via Cursor), and LaTeX in the creation of this Software Design Document. These tools were used in tandem for document creation, reformatting, and editorial work. Cursor and Claude also assisted team member Andres Stephen Lopez in creating the system overview diagram and sequence diagrams. It should be noted that most architecture diagrams were created by team member Logan Pritchard, and Cursor/Claude assistance was limited to the system overview and sequence diagrams only. Team member Grace Hechavarria created the UI/UX mockups and wireframes for the mobile application via Figma. All team members contributed to the creation of the Software Design Document content in prior meetings. Team member Andres Stephen Lopez performed the assembly and editing of the Software Design Document.
+
+In version 1.1, we also acknowledge the use of ChatGPT by team members Grace Hechavarria, Logan Pritchard, and Nicole Fonseca. Nicole used ChatGPT to assist in creating the user stories from existing documents in the project GitHub repository that covered the EPICs the team had previously defined. Logan used ChatGPT to extract meaningful roles from the document Nicole produced. Grace used ChatGPT to walk through creating the burndown chart in excel and assigning user story points to it. Andres Stephen Lopez did not use ChatGPT for this part of the project; his tool usage remains as described above (Cursor IDE and Anthropic Claude via Cursor).
+
 \subsection{References}
-\begin{itemize}
-    \item Google Places API Documentation
-    \item Misskey GitHub Repository: https://github.com/misskey-dev/misskey
-    \item Expo Camera Documentation: https://docs.expo.dev/versions/latest/sdk/camera/
-    \item Cloudinary Documentation: https://cloudinary.com/documentation/image\_upload\_api\_reference
-    \item SendGrid API Documentation: https://docs.sendgrid.com/api-reference
-    \item Firebase Authentication Documentation: https://firebase.google.com/docs/auth
-    \item Cursor IDE: https://cursor.sh/ - AI-powered code editor used for development and documentation
-    \item Anthropic Claude (via Cursor): Large Language Model AI assistant used for code generation, documentation, and design assistance throughout the project
-    \item LaTeX Project: https://www.latex-project.org/ - Document preparation system used for creating this Software Design Document
+
+\begin{itemize}[leftmargin=0.5in, itemindent=-0.5in, labelsep=0in]
+\item Cloudinary. (n.d.). \textit{Image upload API reference}. Retrieved from \url{https://cloudinary.com/documentation/image_upload_api_reference}
+
+\item Expo. (n.d.). \textit{Expo Camera SDK documentation}. Retrieved from \url{https://docs.expo.dev/versions/latest/sdk/camera/}
+
+\item Google. (n.d.). \textit{Firebase Authentication}. In \textit{Firebase Documentation}. Retrieved from \url{https://firebase.google.com/docs/auth}
+
+\item Google. (n.d.). \textit{Places API}. In \textit{Google Maps Platform Documentation}. Retrieved from \url{https://developers.google.com/maps/documentation/places}
+
+\item misskey-dev. (n.d.). \textit{Misskey} [Computer software]. GitHub. \url{https://github.com/misskey-dev/misskey}
+
+\item Twilio SendGrid. (n.d.). \textit{SendGrid v3 API reference}. In \textit{Twilio SendGrid Docs}. Retrieved from \url{https://docs.sendgrid.com/api-reference}
 \end{itemize}
 
 \newpage
@@ -463,5 +487,426 @@ FR-8 & Municipality dashboard & Public Access Component & TBD \\
 FR-9 & Photo validation and abuse prevention & Photo Capture Component, Validation Module & TBD \\
 \hline
 \end{tabular}
+
+\newpage
+\section{Sprint Planning}
+
+\setlist[enumerate]{topsep=0pt, partopsep=0pt, parsep=0pt, itemsep=2pt, leftmargin=1.5em}
+
+\subsection{Role Focuses}
+
+\vspace{0.3em}
+
+\noindent
+\begin{tabular}{|L{3cm}|L{4.5cm}|L{7.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Role} & \textbf{Responsibilities} \\
+\hline
+Grace Hechevarria & Frontend / UI Implementation Lead & Primary owner of React Native screens, camera flow, profile UI, notifications, search, and public pages \\
+\hline
+Nicole Fonseca & Frontend Integration \& Validation Lead & Handles permission flows, validation messages, session UI, error handling, and frontend protection \\
+\hline
+Logan Pritchard & Frontend Data Integration Lead & Connects UI to Google Places, Cloudinary, SendGrid responses, and manages data display \\
+\hline
+Andres Lopez & Backend Architecture \& API Lead & Owns Misskey backend, Python API wrapper, database schema, endpoints, issue logic, and notification triggers \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+\subsection{Sprint Schedule, User Stories, and Acceptance Criteria}
+
+\vspace{0.5em}
+
+%%% SPRINT 1 %%%
+\noindent{\textbf{\large Sprint 1 -- Account Creation \& Login}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 1 & 02/08 -- 02/14 &
+As a new user, I want to create an account with a username and optional email, so that I can use the system without strict verification. &
+\begin{enumerate}
+    \item Verify that a user can register with a username and password.
+    \item Verify that email is optional.
+    \item Verify that usernames are unique.
+    \item Verify that successful registration logs the user in.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to log in and log out, so that my account remains secure. &
+\begin{enumerate}
+    \item Verify that users can log in with valid credentials.
+    \item Verify that logging out ends the session.
+    \item Verify that protected routes require authentication.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Login and registration screens \\
+\hline
+Nicole & Session validation messages and route protection UI \\
+\hline
+Logan & Display user profile data on UI after login \\
+\hline
+Andres & Build authentication API and connect to user model/database \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 2 %%%
+\noindent{\textbf{\large Sprint 2 -- Camera-Only Photo Capture}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 2 & 02/09 -- 02/15 &
+As a user, I want to take photos using the in-app camera, so that only real-time images can be submitted. &
+\begin{enumerate}
+    \item Verify that camera permission is requested.
+    \item Verify that no gallery or file upload option exists.
+    \item Verify that photos come directly from the camera API.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Expo Camera integration and capture screen \\
+\hline
+Nicole & Permission prompts and error messages \\
+\hline
+Logan & UI flow for camera preview and confirmation \\
+\hline
+Andres & Backend endpoint to receive image data \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 3 %%%
+\noindent{\textbf{\large Sprint 3 -- Automatic Upload to Cloudinary}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 3 & 02/16 -- 02/22 &
+As a user, I want my photo to upload immediately after capture, so that it is securely stored with metadata. &
+\begin{enumerate}
+    \item Verify that upload starts automatically after capture.
+    \item Verify that uploads include a server-side timestamp.
+    \item Verify that users can see whether the upload succeeds or fails.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Upload progress and success/failure display \\
+\hline
+Nicole & Frontend validation if upload fails \\
+\hline
+Logan & Connect UI to Cloudinary response data \\
+\hline
+Andres & Implement upload handling, timestamps, and metadata storage \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 4 %%%
+\noindent{\textbf{\large Sprint 4 -- GPS Location Capture}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 4 & 02/23 -- 03/01 &
+As a user, I want my GPS location captured when I take a photo, so that issues show where it happened. &
+\begin{enumerate}
+    \item Verify that location permission is requested.
+    \item Verify that submissions without GPS data are blocked.
+    \item Verify that valid latitude and longitude values are stored.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & GPS capture integration into UI flow \\
+\hline
+Nicole & Permission prompts and error handling UI \\
+\hline
+Logan & Display coordinates/building suggestions on UI \\
+\hline
+Andres & Store GPS data and attach to issue metadata \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 5 %%%
+\noindent{\textbf{\large Sprint 5 -- Building Identification with Google Places}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 5 & 03/02 -- 03/08 &
+As a user, I want to see nearby buildings suggested, so that I can accurately tag an issue. &
+\begin{enumerate}
+    \item Verify that nearby buildings are retrieved using GPS coordinates.
+    \item Verify that results include building name and address.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to select the correct building, so that the issue is linked accurately. &
+\begin{enumerate}
+    \item Verify that a building can be selected from the suggestion list.
+    \item Verify that the selected building is stored with the issue.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Building selection interface \\
+\hline
+Nicole & Validation if no building is selected \\
+\hline
+Logan & Display nearby buildings using API data \\
+\hline
+Andres & Process and store building ID with issue \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 6 %%%
+\noindent{\textbf{\large Sprint 6 -- Issue Creation \& Building History}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 6 & 03/09 -- 03/15 &
+As a user, I want to create an issue with a photo and building, so that infrastructure problems are documented. &
+\begin{enumerate}
+    \item Verify that issue records store photo, building, timestamp, and user ID.
+    \item Verify that the issue appears after submission.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to view issues for a building in chronological order, so that I can view its history. &
+\begin{enumerate}
+    \item Verify that issues are ordered by date.
+    \item Verify that resolved issues remain visible.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Issue creation form and history display UI \\
+\hline
+Nicole & UI validation for required fields \\
+\hline
+Logan & Populate building issue history from API data \\
+\hline
+Andres & Build issue creation endpoint and database schema \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 7 %%%
+\noindent{\textbf{\large Sprint 7 -- Association Email Notifications}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 7 & 03/16 -- 03/22 &
+As the system, I want to notify associations when an issue is posted, so that they're aware and can take action. &
+\begin{enumerate}
+    \item Verify that emails are sent on issue creation.
+    \item Verify that emails include issue details and links.
+    \item Verify that failed notifications are logged.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Notification status UI \\
+\hline
+Nicole & Error/status messages for notifications \\
+\hline
+Logan & Display association contact/notification results \\
+\hline
+Andres & Trigger SendGrid emails and log results \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 8 %%%
+\noindent{\textbf{\large Sprint 8 -- Abuse Prevention \& Validation}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 8 & 03/23 -- 03/29 &
+As the system, I want to limit submissions per user, so that spam and abuse are reduced. &
+\begin{enumerate}
+    \item Verify that daily submission limits are enforced.
+    \item Verify that users receive an error when limits are exceeded.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As the system, I want to detect duplicate photo uploads, so that repeated spam is prevented. &
+\begin{enumerate}
+    \item Verify that duplicate images are detected using file hashing.
+    \item Verify that duplicate submissions are blocked or flagged.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & User feedback when limits are reached \\
+\hline
+Nicole & UI for duplicate/limit errors \\
+\hline
+Logan & Show validation results on screen \\
+\hline
+Andres & Implement submission limits and hashing logic \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 9 %%%
+\noindent{\textbf{\large Sprint 9 -- Public Building View \& Search}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 9 & 03/30 -- 04/05 &
+As a member of the public, I want to view building issue records without logging in, so that transparency is maintained. &
+\begin{enumerate}
+    \item Verify that public building pages are accessible without authentication.
+    \item Verify that no private user data is exposed.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to search and filter building issues, so that I can find relevant records efficiently. &
+\begin{enumerate}
+    \item Verify that buildings can be searched by name or address.
+    \item Verify that issues can be filtered by date or status.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Public building view screens \\
+\hline
+Nicole & Ensure UI hides private user data \\
+\hline
+Logan & Search UI and results display \\
+\hline
+Andres & Build public endpoints and secure data filtering \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth, keepaspectratio]{sprint/StructSure_Project_Burndown_Chart.png}
+\caption{StructSure project burndown chart. A burndown chart shows remaining work over time so the team can track progress and predict completion.}
+\label{fig:burndown}
+\end{figure}
 
 \end{document}

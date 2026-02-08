@@ -1,0 +1,424 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{booktabs}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\setlist[enumerate]{topsep=0pt, partopsep=0pt, parsep=0pt, itemsep=2pt, leftmargin=1.5em}
+
+\begin{document}
+
+\begin{center}
+    {\Large\bfseries Sprint Schedule, User Stories, and Acceptance Criteria}
+\end{center}
+
+\vspace{0.5em}
+
+\begin{center}
+    {\large\bfseries Role Focuses}
+\end{center}
+
+\vspace{0.3em}
+
+\noindent
+\begin{tabular}{|L{3cm}|L{4.5cm}|L{7.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Role} & \textbf{Responsibilities} \\
+\hline
+Grace Hechevarria & Frontend / UI Implementation Lead & Primary owner of React Native screens, camera flow, profile UI, notifications, search, and public pages \\
+\hline
+Nicole Fonseca & Frontend Integration \& Validation Lead & Handles permission flows, validation messages, session UI, error handling, and frontend protection \\
+\hline
+Logan Pritchard & Frontend Data Integration Lead & Connects UI to Google Places, Cloudinary, SendGrid responses, and manages data display \\
+\hline
+Andres Lopez & Backend Architecture \& API Lead & Owns Misskey backend, Python API wrapper, database schema, endpoints, issue logic, and notification triggers \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 1 %%%
+\noindent{\textbf{\large Sprint 1 -- Account Creation \& Login}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 1 & 02/08 -- 02/14 &
+As a new user, I want to create an account with a username and optional email, so that I can use the system without strict verification. &
+\begin{enumerate}
+    \item Verify that a user can register with a username and password.
+    \item Verify that email is optional.
+    \item Verify that usernames are unique.
+    \item Verify that successful registration logs the user in.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to log in and log out, so that my account remains secure. &
+\begin{enumerate}
+    \item Verify that users can log in with valid credentials.
+    \item Verify that logging out ends the session.
+    \item Verify that protected routes require authentication.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Login and registration screens \\
+\hline
+Nicole & Session validation messages and route protection UI \\
+\hline
+Logan & Display user profile data on UI after login \\
+\hline
+Andres & Build authentication API and connect to user model/database \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 2 %%%
+\noindent{\textbf{\large Sprint 2 -- Camera-Only Photo Capture}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 2 & 02/09 -- 02/15 &
+As a user, I want to take photos using the in-app camera, so that only real-time images can be submitted. &
+\begin{enumerate}
+    \item Verify that camera permission is requested.
+    \item Verify that no gallery or file upload option exists.
+    \item Verify that photos come directly from the camera API.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Expo Camera integration and capture screen \\
+\hline
+Nicole & Permission prompts and error messages \\
+\hline
+Logan & UI flow for camera preview and confirmation \\
+\hline
+Andres & Backend endpoint to receive image data \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 3 %%%
+\noindent{\textbf{\large Sprint 3 -- Automatic Upload to Cloudinary}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 3 & 02/16 -- 02/22 &
+As a user, I want my photo to upload immediately after capture, so that it is securely stored with metadata. &
+\begin{enumerate}
+    \item Verify that upload starts automatically after capture.
+    \item Verify that uploads include a server-side timestamp.
+    \item Verify that users can see whether the upload succeeds or fails.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Upload progress and success/failure display \\
+\hline
+Nicole & Frontend validation if upload fails \\
+\hline
+Logan & Connect UI to Cloudinary response data \\
+\hline
+Andres & Implement upload handling, timestamps, and metadata storage \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 4 %%%
+\noindent{\textbf{\large Sprint 4 -- GPS Location Capture}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 4 & 02/23 -- 03/01 &
+As a user, I want my GPS location captured when I take a photo, so that issues show where it happened. &
+\begin{enumerate}
+    \item Verify that location permission is requested.
+    \item Verify that submissions without GPS data are blocked.
+    \item Verify that valid latitude and longitude values are stored.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & GPS capture integration into UI flow \\
+\hline
+Nicole & Permission prompts and error handling UI \\
+\hline
+Logan & Display coordinates/building suggestions on UI \\
+\hline
+Andres & Store GPS data and attach to issue metadata \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 5 %%%
+\noindent{\textbf{\large Sprint 5 -- Building Identification with Google Places}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 5 & 03/02 -- 03/08 &
+As a user, I want to see nearby buildings suggested, so that I can accurately tag an issue. &
+\begin{enumerate}
+    \item Verify that nearby buildings are retrieved using GPS coordinates.
+    \item Verify that results include building name and address.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to select the correct building, so that the issue is linked accurately. &
+\begin{enumerate}
+    \item Verify that a building can be selected from the suggestion list.
+    \item Verify that the selected building is stored with the issue.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Building selection interface \\
+\hline
+Nicole & Validation if no building is selected \\
+\hline
+Logan & Display nearby buildings using API data \\
+\hline
+Andres & Process and store building ID with issue \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 6 %%%
+\noindent{\textbf{\large Sprint 6 -- Issue Creation \& Building History}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 6 & 03/09 -- 03/15 &
+As a user, I want to create an issue with a photo and building, so that infrastructure problems are documented. &
+\begin{enumerate}
+    \item Verify that issue records store photo, building, timestamp, and user ID.
+    \item Verify that the issue appears after submission.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to view issues for a building in chronological order, so that I can view its history. &
+\begin{enumerate}
+    \item Verify that issues are ordered by date.
+    \item Verify that resolved issues remain visible.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Issue creation form and history display UI \\
+\hline
+Nicole & UI validation for required fields \\
+\hline
+Logan & Populate building issue history from API data \\
+\hline
+Andres & Build issue creation endpoint and database schema \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 7 %%%
+\noindent{\textbf{\large Sprint 7 -- Association Email Notifications}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 7 & 03/16 -- 03/22 &
+As the system, I want to notify associations when an issue is posted, so that they're aware and can take action. &
+\begin{enumerate}
+    \item Verify that emails are sent on issue creation.
+    \item Verify that emails include issue details and links.
+    \item Verify that failed notifications are logged.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Notification status UI \\
+\hline
+Nicole & Error/status messages for notifications \\
+\hline
+Logan & Display association contact/notification results \\
+\hline
+Andres & Trigger SendGrid emails and log results \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 8 %%%
+\noindent{\textbf{\large Sprint 8 -- Abuse Prevention \& Validation}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 8 & 03/23 -- 03/29 &
+As the system, I want to limit submissions per user, so that spam and abuse are reduced. &
+\begin{enumerate}
+    \item Verify that daily submission limits are enforced.
+    \item Verify that users receive an error when limits are exceeded.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As the system, I want to detect duplicate photo uploads, so that repeated spam is prevented. &
+\begin{enumerate}
+    \item Verify that duplicate images are detected using file hashing.
+    \item Verify that duplicate submissions are blocked or flagged.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & User feedback when limits are reached \\
+\hline
+Nicole & UI for duplicate/limit errors \\
+\hline
+Logan & Show validation results on screen \\
+\hline
+Andres & Implement submission limits and hashing logic \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+%%% SPRINT 9 %%%
+\noindent{\textbf{\large Sprint 9 -- Public Building View \& Search}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 9 & 03/30 -- 04/05 &
+As a member of the public, I want to view building issue records without logging in, so that transparency is maintained. &
+\begin{enumerate}
+    \item Verify that public building pages are accessible without authentication.
+    \item Verify that no private user data is exposed.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to search and filter building issues, so that I can find relevant records efficiently. &
+\begin{enumerate}
+    \item Verify that buildings can be searched by name or address.
+    \item Verify that issues can be filtered by date or status.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Public building view screens \\
+\hline
+Nicole & Ensure UI hides private user data \\
+\hline
+Logan & Search UI and results display \\
+\hline
+Andres & Build public endpoints and secure data filtering \\
+\hline
+\end{tabular}
+
+\end{document}
