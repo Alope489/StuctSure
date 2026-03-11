@@ -10,7 +10,7 @@ function Login() {
         <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
           <label className="auth-field">
             <span className="auth-field-label">Email or Username</span>
-            <input type="text" placeholder="mathurshivanshu" autoComplete="username" className="auth-input" />
+            <input type="text" placeholder="username" autoComplete="username" className="auth-input" />
           </label>
           <label className="auth-field">
             <span className="auth-field-label">Password</span>
