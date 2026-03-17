@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 
 export default function LoadingScreen() {
+  const insets = useSafeAreaInsets()
   const navigation = useNavigation()
 
   useEffect(() => {
@@ -11,8 +13,8 @@ export default function LoadingScreen() {
   }, [navigation])
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>loading</Text>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Text style={[styles.label, { top: 48 + insets.top }]}>loading</Text>
       <View style={styles.logoWrap}>
         <Text style={styles.logoText}>StructSure</Text>
       </View>
@@ -29,7 +31,6 @@ const styles = StyleSheet.create({
   },
   label: {
     position: 'absolute',
-    top: 48,
     left: 24,
     fontSize: 14,
     color: '#888',

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native'
 import Slider from '@react-native-community/slider'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Location from 'expo-location'
@@ -19,6 +20,7 @@ const categories = [
 ]
 
 export default function NewPostScreen() {
+  const insets = useSafeAreaInsets()
   const navigation = useNavigation()
   const [permission, requestPermission] = useCameraPermissions()
   const [locationPermission, requestLocationPermission] = Location.useForegroundPermissions()
@@ -59,11 +61,11 @@ export default function NewPostScreen() {
   }
 
   if (!permission) {
-    return <View style={styles.container}><Text style={styles.text}>Loading camera…</Text></View>
+    return <View style={[styles.container, { paddingTop: insets.top + 24 }]}><Text style={styles.text}>Loading camera…</Text></View>
   }
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top + 24 }]}>
         <Text style={styles.text}>Camera permission required to capture damage photos.</Text>
         <TouchableOpacity style={styles.btnPrimary} onPress={requestPermission}>
           <Text style={styles.btnText}>Grant camera access</Text>
@@ -74,8 +76,8 @@ export default function NewPostScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topbar}>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backBtn}>
+      <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
+        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>New post</Text>

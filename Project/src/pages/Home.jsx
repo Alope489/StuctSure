@@ -1,15 +1,15 @@
 import './Home.css'
-import { useId, useRef } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const demoPosts = [
   {
     id: 'p1',
     author: 'Mia Chen',
-    time: '1 hour ago · 11:53 AM',
+    time: '1 hour ago ? 11:53 AM',
     title: 'Exterior foundation crack at Riverside Plaza',
     body:
-      'Location: Riverside Plaza (North entrance, by the loading zone)\nAddress: 214 W Pine St\nVisited: Today around 11:30 AM\n\nThere’s a visible separation where the wall meets the slab, and the crack line looks like it’s spreading along the corner. Pieces of material are flaking off around it.\n\nNot sure if this is settling or water-related, but it doesn’t look cosmetic. Posting in case building management needs to inspect before it gets worse.',
+      'Location: Riverside Plaza (North entrance, by the loading zone)\nAddress: 214 W Pine St\nVisited: Today around 11:30 AM\n\nThere?s a visible separation where the wall meets the slab, and the crack line looks like it?s spreading along the corner. Pieces of material are flaking off around it.\n\nNot sure if this is settling or water-related, but it doesn?t look cosmetic. Posting in case building management needs to inspect before it gets worse.',
     likes: 292,
     comments: 598,
     images: [
@@ -26,10 +26,10 @@ const demoPosts = [
   {
     id: 'p2',
     author: 'Jordan Rivera',
-    time: '4 hours ago · 8:22 AM',
+    time: '4 hours ago ? 8:22 AM',
     title: 'Cracked window at Cityline Bus Terminal',
     body:
-      'Location: Cityline Bus Terminal (Gate 4 waiting area)\nVisited: Today around 8:00 AM\n\nA window pane has a spiderweb crack starting near the corner. It’s not taped off and people are leaning bags against it.\n\nFlagging this as a safety issue—seems like it could shatter further with vibration or impact.',
+      'Location: Cityline Bus Terminal (Gate 4 waiting area)\nVisited: Today around 8:00 AM\n\nA window pane has a spiderweb crack starting near the corner. It?s not taped off and people are leaning bags against it.\n\nFlagging this as a safety issue?seems like it could shatter further with vibration or impact.',
     likes: 84,
     comments: 31,
     images: [
@@ -42,10 +42,10 @@ const demoPosts = [
   {
     id: 'p3',
     author: 'Ayesha Patel',
-    time: 'Yesterday · 6:41 PM',
+    time: 'Yesterday ? 6:41 PM',
     title: 'Water damage/mold smell in parking garage stairwell',
     body:
-      'Location: Metro Center Garage (Stairwell B, Level P2)\nVisited: Yesterday around 6:30 PM\n\nThe lower wall has dark damp patches and the stairwell smells musty. No standing water, but it feels humid and looks like repeated moisture exposure.\n\nIf this is seepage, it may need remediation—posting so the garage operator can check drainage/ventilation.',
+      'Location: Metro Center Garage (Stairwell B, Level P2)\nVisited: Yesterday around 6:30 PM\n\nThe lower wall has dark damp patches and the stairwell smells musty. No standing water, but it feels humid and looks like repeated moisture exposure.\n\nIf this is seepage, it may need remediation?posting so the garage operator can check drainage/ventilation.',
     likes: 137,
     comments: 62,
     images: [
@@ -66,10 +66,10 @@ const demoPosts = [
   {
     id: 'p4',
     author: 'Noah Williams',
-    time: '2 days ago · 3:10 PM',
+    time: '2 days ago ? 3:10 PM',
     title: 'Cracked concrete walkway outside Greenway Market',
     body:
-      'Location: Greenway Market (front entrance sidewalk)\nVisited: 2 days ago\n\nThere’s a widening crack in the concrete with branching lines. It’s uneven enough that it looks like a trip hazard—especially for carts/strollers.\n\nNot sure who maintains this section (store vs property management), but it should be patched/leveled soon.',
+      'Location: Greenway Market (front entrance sidewalk)\nVisited: 2 days ago\n\nThere?s a widening crack in the concrete with branching lines. It?s uneven enough that it looks like a trip hazard?especially for carts/strollers.\n\nNot sure who maintains this section (store vs property management), but it should be patched/leveled soon.',
     likes: 55,
     comments: 19,
     images: [
@@ -82,10 +82,10 @@ const demoPosts = [
   {
     id: 'p5',
     author: 'Jordan Rivera',
-    time: '3 days ago · 9:02 AM',
-    title: 'Ceiling damage above table area at Brew & Bean Café',
+    time: '3 days ago ? 9:02 AM',
+    title: 'Ceiling damage above table area at Brew & Bean Caf?',
     body:
-      'Location: Brew & Bean Café (back seating)\nVisited: 3 days ago\n\nThere’s a long crack / damaged seam in the ceiling above the tables. It looks like previous patching is failing, and the area has staining.\n\nPosting two angles—worth checking before anything loosens or falls.',
+      'Location: Brew & Bean Caf? (back seating)\nVisited: 3 days ago\n\nThere?s a long crack / damaged seam in the ceiling above the tables. It looks like previous patching is failing, and the area has staining.\n\nPosting two angles?worth checking before anything loosens or falls.',
     likes: 41,
     comments: 12,
     images: [
@@ -134,7 +134,7 @@ function PostGallery({ images, postId }) {
               aria-controls={galleryId}
               onClick={() => scrollBySlide(-1)}
             >
-              ‹
+              ?
             </button>
             <button
               className="post-gallery-arrow post-gallery-arrow-right"
@@ -143,7 +143,7 @@ function PostGallery({ images, postId }) {
               aria-controls={galleryId}
               onClick={() => scrollBySlide(1)}
             >
-              ›
+              ?
             </button>
           </>
         ) : null}
@@ -172,6 +172,12 @@ function StatItem({ icon, value }) {
 
 function Icon({ name }) {
   switch (name) {
+    case 'back':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" className="home-icon">
+          <path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
     case 'menu':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true" className="home-icon">
@@ -325,8 +331,25 @@ function Post({ post }) {
   )
 }
 
+const DEFAULT_USER = { photo: null, username: 'johndoe', email: 'user@domain.com' }
+
 function Home() {
   const navigate = useNavigate()
+  const fileInputRef = useRef(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [user, setUser] = useState(DEFAULT_USER)
+
+  const handleEditPicture = () => {
+    fileInputRef.current?.click()
+  }
+  const onProfilePhotoChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = () => setUser((u) => ({ ...u, photo: reader.result }))
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
 
   return (
     <div className="home">
@@ -335,8 +358,14 @@ function Home() {
           <img className="home-brand-logo" src="/logo.png" alt="StructSure" />
           <span className="home-brand-name">StructSure</span>
         </div>
-        <button className="icon-btn" type="button" aria-label="Menu">
-          <Icon name="menu" />
+        <button className="home-profile-btn" type="button" aria-label="Profile" onClick={() => setProfileOpen(true)}>
+          {user.photo ? (
+            <img src={user.photo} alt="" className="home-profile-pic" />
+          ) : (
+            <span className="home-profile-placeholder" aria-hidden="true">
+              <Icon name="user" />
+            </span>
+          )}
         </button>
       </header>
 
@@ -374,6 +403,51 @@ function Home() {
           <Icon name="user" />
         </button>
       </nav>
+
+      {profileOpen && (
+        <>
+          <div className="home-profile-backdrop" onClick={() => setProfileOpen(false)} aria-hidden="true" />
+          <aside className="home-profile-panel">
+            <button className="home-profile-back" type="button" aria-label="Back" onClick={() => setProfileOpen(false)}>
+              <Icon name="back" />
+            </button>
+            <div className="home-profile-content">
+              <div className="home-profile-pic-large">
+                {user.photo ? <img src={user.photo} alt="" /> : <Icon name="user" />}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="home-profile-file-input"
+                onChange={onProfilePhotoChange}
+                aria-hidden="true"
+              />
+              <button type="button" className="home-profile-edit-pic" onClick={handleEditPicture}>Edit picture</button>
+              <label className="home-profile-label">Username</label>
+              <input
+                type="text"
+                className="home-profile-input"
+                value={user.username}
+                onChange={(e) => setUser((u) => ({ ...u, username: e.target.value }))}
+              />
+              <label className="home-profile-label">Email</label>
+              <input
+                type="email"
+                className="home-profile-input"
+                value={user.email}
+                onChange={(e) => setUser((u) => ({ ...u, email: e.target.value }))}
+              />
+              <button type="button" className="home-profile-btn-primary" onClick={() => setProfileOpen(false)}>
+                Posts status
+              </button>
+              <button type="button" className="home-profile-btn-outline" onClick={() => { setProfileOpen(false); navigate('/login'); }}>
+                Log out
+              </button>
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   )
 }

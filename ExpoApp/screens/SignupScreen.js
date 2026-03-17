@@ -1,12 +1,14 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 
 export default function SignupScreen() {
+  const insets = useSafeAreaInsets()
   const navigation = useNavigation()
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>signup</Text>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Text style={[styles.label, { top: 48 + insets.top }]}>signup</Text>
       <View style={styles.content}>
         <Text style={styles.logo}>StructSure</Text>
         <TextInput style={styles.input} placeholder="Username" placeholderTextColor="#888" />
@@ -30,7 +32,7 @@ export default function SignupScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d0d0d', padding: 24 },
-  label: { position: 'absolute', top: 48, left: 24, fontSize: 14, color: '#888' },
+  label: { position: 'absolute', left: 24, fontSize: 14, color: '#888' },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 48 },
   logo: { fontSize: 24, fontWeight: '600', color: '#00ff7f', marginBottom: 32 },
   input: { backgroundColor: '#333', color: '#e0e0e0', borderRadius: 12, padding: 14, width: '100%', maxWidth: 320, marginBottom: 16, fontSize: 16 },

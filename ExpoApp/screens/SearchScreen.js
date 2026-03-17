@@ -1,8 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function SearchScreen() {
+  const insets = useSafeAreaInsets()
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Text style={styles.title}>Search</Text>
       <Text style={styles.subtitle}>Coming soon</Text>
     </View>
