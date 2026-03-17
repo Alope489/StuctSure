@@ -1,13 +1,15 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 
 const demoPosts = [
-  { id: '1', author: 'Mia Chen', time: '1 hour ago', title: 'Exterior foundation crack at Riverside Plaza', likes: 292, comments: 598 },
-  { id: '2', author: 'Jordan Rivera', time: '4 hours ago', title: 'Cracked window at Cityline Bus Terminal', likes: 84, comments: 31 },
+  { id: '1', author: 'Mia Chen', time: '1 hour ago', title: 'Exterior foundation crack at Riverside Plaza', likes: 292, comments: 598, images: [{ url: 'https://images.unsplash.com/photo-1740921303129-126a783b9c6c?auto=format&fit=crop&w=1400&q=70' }] },
+  { id: '2', author: 'Jordan Rivera', time: '4 hours ago', title: 'Cracked window at Cityline Bus Terminal', likes: 84, comments: 31, images: [{ url: 'https://images.unsplash.com/photo-1646310585298-8a9b8ada20c5?auto=format&fit=crop&w=1400&q=70' }] },
+  { id: '3', author: 'Ayesha Patel', time: 'Yesterday', title: 'Water damage in parking garage stairwell', likes: 137, comments: 62, images: [{ url: 'https://images.unsplash.com/photo-1724230442705-646dc7c86943?auto=format&fit=crop&w=1400&q=70' }] },
 ]
 
 function PostCard({ post }) {
   const initial = (post.author || '?').trim().slice(0, 1).toUpperCase()
+  const firstImage = post.images?.[0]?.url
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -19,6 +21,9 @@ function PostCard({ post }) {
           <Text style={styles.time}>{post.time}</Text>
         </View>
       </View>
+      {firstImage ? (
+        <Image source={{ uri: firstImage }} style={styles.postImage} resizeMode="cover" />
+      ) : null}
       <Text style={styles.title}>{post.title}</Text>
       <View style={styles.actions}>
         <View style={styles.actionRow}>
@@ -62,6 +67,7 @@ const styles = StyleSheet.create({
   meta: {},
   author: { fontSize: 14, fontWeight: '600', color: '#e0e0e0' },
   time: { fontSize: 12, color: '#888' },
+  postImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 10, backgroundColor: 'rgba(255,255,255,0.05)' },
   title: { fontSize: 16, fontWeight: '600', color: '#e0e0e0', marginBottom: 10 },
   actions: { flexDirection: 'row', gap: 18 },
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

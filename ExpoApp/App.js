@@ -33,7 +33,7 @@ function MainTabs() {
         component={NewPostScreen}
         options={{
           title: 'New',
-          tabBarIcon: ({ color, size }) => <Ionicons name="add-circle" size={size} color={color} /> },
+          tabBarIcon: ({ color, size }) => <Ionicons name="add-circle" size={size} color={color} />,
         }}
       />
     </Tab.Navigator>
