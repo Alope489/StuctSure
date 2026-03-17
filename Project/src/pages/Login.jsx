@@ -1,13 +1,14 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import './Auth.css'
 
 function Login() {
+  const navigate = useNavigate()
   return (
     <div className="auth-page">
       <span className="auth-label">login</span>
       <div className="auth-content">
         <img src="/logo.png" alt="StructSure" className="auth-logo" />
-        <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
+        <form className="auth-form" onSubmit={(e) => { e.preventDefault(); navigate('/home') }}>
           <label className="auth-field">
             <span className="auth-field-label">Email or Username</span>
             <input type="text" placeholder="username" autoComplete="username" className="auth-input" />
