@@ -8,7 +8,10 @@ import LoadingScreen from './screens/LoadingScreen'
 import LoginScreen from './screens/LoginScreen'
 import SignupScreen from './screens/SignupScreen'
 import HomeScreen from './screens/HomeScreen'
+import SearchScreen from './screens/SearchScreen'
 import NewPostScreen from './screens/NewPostScreen'
+import NotificationsScreen from './screens/NotificationsScreen'
+import ProfileScreen from './screens/ProfileScreen'
 
 const Stack = createNativeStackNavigator()
 const Tab = createBottomTabNavigator()
@@ -21,6 +24,7 @@ function MainTabs() {
         tabBarStyle: { backgroundColor: '#0d0d0d', borderTopColor: 'rgba(255,255,255,0.08)' },
         tabBarActiveTintColor: '#00ff7f',
         tabBarInactiveTintColor: '#888',
+        tabBarShowLabel: false,
       }}
     >
       <Tab.Screen
@@ -29,12 +33,27 @@ function MainTabs() {
         options={{ tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} /> }}
       />
       <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{ tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} /> }}
+      />
+      <Tab.Screen
         name="NewPost"
         component={NewPostScreen}
         options={{
           title: 'New',
           tabBarIcon: ({ color, size }) => <Ionicons name="add-circle" size={size} color={color} />,
         }}
+      />
+      <Tab.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} /> }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> }}
       />
     </Tab.Navigator>
   )

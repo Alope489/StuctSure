@@ -76,6 +76,7 @@ function Icon({ name }) {
 function NewPost() {
   const navigate = useNavigate()
   const [caption, setCaption] = useState('')
+  const [severity, setSeverity] = useState(5)
   const [selected, setSelected] = useState(() => new Set(['structural']))
   const [locationQuery, setLocationQuery] = useState('11150 SW 14th St, Miami, FL 33199')
   const [cameraStatus, setCameraStatus] = useState('idle') // idle | ready | denied | error
@@ -210,6 +211,21 @@ function NewPost() {
                 {c.label}
               </button>
             ))}
+          </div>
+
+          <div className="np-severity" aria-label="Severity">
+            <span className="np-severity-label">Severity</span>
+            <div className="np-severity-row">
+              <input
+                type="range"
+                min={1}
+                max={10}
+                value={severity}
+                onChange={(e) => setSeverity(Number(e.target.value))}
+                className="np-severity-slider"
+              />
+              <span className="np-severity-value">{severity}</span>
+            </div>
           </div>
 
           <div className="np-selected" aria-label="Selected categories">

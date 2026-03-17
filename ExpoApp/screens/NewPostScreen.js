@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native'
+import Slider from '@react-native-community/slider'
 import { useNavigation } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Location from 'expo-location'
@@ -22,6 +23,7 @@ export default function NewPostScreen() {
   const [permission, requestPermission] = useCameraPermissions()
   const [locationPermission, requestLocationPermission] = Location.useForegroundPermissions()
   const [caption, setCaption] = useState('')
+  const [severity, setSeverity] = useState(5)
   const [selected, setSelected] = useState(new Set(['structural']))
   const [capturedPhoto, setCapturedPhoto] = useState(null)
   const [gpsCoords, setGpsCoords] = useState(null)
@@ -131,6 +133,22 @@ export default function NewPostScreen() {
           ))}
         </View>
 
+        <Text style={styles.label}>Severity</Text>
+        <View style={styles.severityRow}>
+          <Slider
+            style={styles.slider}
+            minimumValue={1}
+            maximumValue={10}
+            step={1}
+            value={severity}
+            onValueChange={setSeverity}
+            minimumTrackTintColor="#00ff7f"
+            maximumTrackTintColor="rgba(255,255,255,0.2)"
+            thumbTintColor="#00ff7f"
+          />
+          <Text style={styles.severityValue}>{Math.round(severity)}</Text>
+        </View>
+
         {gpsCoords && (
           <View style={styles.gpsBox}>
             <Text style={styles.gpsLabel}>GPS (captured)</Text>
@@ -168,6 +186,9 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: 'rgba(0,255,127,0.15)', borderColor: 'rgba(0,255,127,0.3)' },
   chipText: { fontSize: 12, color: '#888' },
   chipTextActive: { color: '#00ff7f' },
+  severityRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  slider: { flex: 1, height: 40 },
+  severityValue: { fontSize: 18, fontWeight: '600', color: '#00ff7f', minWidth: 24, textAlign: 'right' },
   gpsBox: { backgroundColor: 'rgba(0,255,127,0.08)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(0,255,127,0.2)' },
   gpsLabel: { fontSize: 12, color: '#00ff7f', marginBottom: 4 },
   gpsText: { fontSize: 14, color: '#e0e0e0' },
