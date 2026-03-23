@@ -49,7 +49,11 @@ function MainTabs() {
       <Tab.Screen
         name="Notifications"
         component={NotificationsScreen}
-        options={{ tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} /> }}
+        options={{
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={size} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="Profile"

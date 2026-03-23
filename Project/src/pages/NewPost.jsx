@@ -264,7 +264,7 @@ function NewPost() {
         <button className="np-nav-btn" type="button" aria-label="Home" onClick={() => navigate('/home')}>
           <Icon name="home" />
         </button>
-        <button className="np-nav-btn" type="button" aria-label="Notifications">
+        <button className="np-nav-btn" type="button" aria-label="Notifications" onClick={() => navigate('/notifications')}>
           <Icon name="bell" />
         </button>
         <button className="np-nav-btn np-nav-btn-primary" type="button" aria-label="Create">

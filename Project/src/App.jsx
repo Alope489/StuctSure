@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Home from './pages/Home'
 import NewPost from './pages/NewPost'
+import Notifications from './pages/Notifications'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/home" element={<Home />} />
       <Route path="/post/new" element={<NewPost />} />
+      <Route path="/notifications" element={<Notifications />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

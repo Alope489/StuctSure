@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+
+# build
+dist/
+*.local
+
+# IDE
+.vscode/
+.idea/
+
+# env
+.env
+.env.*
+!.env.example

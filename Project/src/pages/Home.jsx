@@ -396,7 +396,7 @@ function Home() {
             <Icon name="plus" />
           </span>
         </button>
-        <button className="nav-btn" type="button" aria-label="Notifications">
+        <button className="nav-btn" type="button" aria-label="Notifications" onClick={() => navigate('/notifications')}>
           <Icon name="bell" />
         </button>
         <button className="nav-btn" type="button" aria-label="Profile">
