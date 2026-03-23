@@ -42,13 +42,7 @@ export default function NotificationsScreen() {
       <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
         <Text style={styles.brand}>StructSure</Text>
         <TouchableOpacity style={styles.profileBtn} activeOpacity={0.7}>
-          {DEFAULT_USER.photo ? (
-            <Image source={{ uri: DEFAULT_USER.photo }} style={styles.profilePic} />
-          ) : (
-            <View style={styles.profilePicPlaceholder}>
-              <Ionicons name="person" size={22} color="#888" />
-            </View>
-          )}
+          <Image source={DEFAULT_USER.photo ? { uri: DEFAULT_USER.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
         </TouchableOpacity>
       </View>
 

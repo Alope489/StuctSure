@@ -359,13 +359,7 @@ function Home() {
           <span className="home-brand-name">StructSure</span>
         </div>
         <button className="home-profile-btn" type="button" aria-label="Profile" onClick={() => setProfileOpen(true)}>
-          {user.photo ? (
-            <img src={user.photo} alt="" className="home-profile-pic" />
-          ) : (
-            <span className="home-profile-placeholder" aria-hidden="true">
-              <Icon name="user" />
-            </span>
-          )}
+          <img src={user.photo || '/johndoe.png'} alt="" className="home-profile-pic" />
         </button>
       </header>
 
@@ -413,7 +407,7 @@ function Home() {
             </button>
             <div className="home-profile-content">
               <div className="home-profile-pic-large">
-                {user.photo ? <img src={user.photo} alt="" /> : <Icon name="user" />}
+                <img src={user.photo || '/johndoe.png'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
               </div>
               <input
                 ref={fileInputRef}

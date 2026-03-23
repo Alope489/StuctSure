@@ -1,16 +1,12 @@
 import { useState, useRef } from 'react'
-import { View, Text, ScrollView, StyleSheet, Image, useWindowDimensions, Dimensions, TouchableOpacity, Modal, TextInput, Alert } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, Image, useWindowDimensions, Dimensions, TouchableOpacity, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
+import { useApp } from '../context/AppContext'
+import { getImageSource } from '../data/posts'
 
-const demoPosts = [
-  { id: '1', author: 'Mia Chen', time: '1 hour ago', title: 'Exterior foundation crack at Riverside Plaza', likes: 292, comments: 598, images: [{ url: 'https://images.unsplash.com/photo-1740921303129-126a783b9c6c?auto=format&fit=crop&w=1400&q=70' }, { url: 'https://images.unsplash.com/photo-1740921303048-6b8f232a91ff?auto=format&fit=crop&w=1400&q=70' }] },
-  { id: '2', author: 'Jordan Rivera', time: '4 hours ago', title: 'Cracked window at Cityline Bus Terminal', likes: 84, comments: 31, images: [{ url: 'https://images.unsplash.com/photo-1646310585298-8a9b8ada20c5?auto=format&fit=crop&w=1400&q=70' }] },
-  { id: '3', author: 'Ayesha Patel', time: 'Yesterday', title: 'Water damage in parking garage stairwell', likes: 137, comments: 62, images: [{ url: 'https://images.unsplash.com/photo-1724230442705-646dc7c86943?auto=format&fit=crop&w=1400&q=70' }, { url: 'https://images.unsplash.com/photo-1768573264138-6a67ddce05cd?auto=format&fit=crop&w=1400&q=70' }, { url: 'https://images.unsplash.com/photo-1768573264138-6a67ddce05cd?auto=format&fit=crop&w=1400&q=70' }] },
-]
-
-function PostCard({ post }) {
+function PostCard({ post, isUpvoted, onUpvote, onComment, displayCommentCount, onPostMenu }) {
   const { width: winWidth } = useWindowDimensions()
   const width = winWidth || Dimensions.get('window').width
   const slideWidth = Math.max(width - 52, 280)
@@ -18,6 +14,7 @@ function PostCard({ post }) {
   const scrollRef = useRef(null)
   const initial = (post.author || '?').trim().slice(0, 1).toUpperCase()
   const images = post.images ?? []
+  const displayCount = post.likes + (isUpvoted ? 1 : 0)
   const onScroll = (e) => {
     const offset = e.nativeEvent.contentOffset.x
     const idx = Math.round(offset / slideWidth)
@@ -33,6 +30,11 @@ function PostCard({ post }) {
           <Text style={styles.author}>{post.author}</Text>
           <Text style={styles.time}>{post.time}</Text>
         </View>
+        {onPostMenu && (
+          <TouchableOpacity onPress={() => onPostMenu(post)} style={styles.menuBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="ellipsis-vertical" size={20} color="#888" />
+          </TouchableOpacity>
+        )}
       </View>
       {images.length > 0 ? (
         <View style={[styles.galleryWrap, { width: slideWidth }]}>
@@ -47,7 +49,7 @@ function PostCard({ post }) {
           >
             {images.map((img, idx) => (
               <View key={idx} style={[styles.slide, { width: slideWidth }]}>
-                <Image source={{ uri: img.url }} style={styles.postImage} resizeMode="cover" />
+                <Image source={getImageSource(img)} style={styles.postImage} resizeMode="cover" />
               </View>
             ))}
           </ScrollView>
@@ -61,30 +63,67 @@ function PostCard({ post }) {
         </View>
       ) : null}
       <Text style={styles.title}>{post.title}</Text>
+      {post.body ? <Text style={styles.body}>{post.body}</Text> : null}
+      {((post.tags?.length || 0) > 0 || (post.tagsMore || 0) > 0) && (
+        <View style={styles.tagsRow}>
+          {(post.tags || []).map((tag) => (
+            <View key={tag} style={styles.tagChip}>
+              <Text style={styles.tagChipText}>{tag}</Text>
+            </View>
+          ))}
+          {(post.tagsMore || 0) > 0 && (
+            <View style={styles.tagChip}>
+              <Text style={styles.tagChipText}>{post.tagsMore}</Text>
+            </View>
+          )}
+        </View>
+      )}
       <View style={styles.actions}>
-        <View style={styles.actionRow}>
-          <Ionicons name="heart-outline" size={18} color="#00ff7f" />
-          <Text style={styles.actionText}>{post.likes}</Text>
-        </View>
-        <View style={styles.actionRow}>
+        <TouchableOpacity style={styles.actionRow} onPress={() => onUpvote(post.id)} activeOpacity={0.6}>
+          <Ionicons name={isUpvoted ? 'arrow-up' : 'arrow-up-outline'} size={20} color={isUpvoted ? '#00ff7f' : '#888'} />
+          <Text style={[styles.actionText, isUpvoted && styles.actionTextActive]}>{displayCount}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionRow} onPress={() => onComment(post.id)} activeOpacity={0.6}>
           <Ionicons name="chatbubble-outline" size={18} color="#888" />
-          <Text style={styles.actionText}>{post.comments}</Text>
-        </View>
+          <Text style={styles.actionText}>{displayCommentCount}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   )
 }
 
-const DEFAULT_USER = {
-  photo: null,
-  username: 'johndoe',
-  email: 'user@domain.com',
-}
-
 export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets()
+  const { posts, user, setUser, upvotedPosts, commentsByPost, toggleUpvote, addComment, deletePost, getDisplayCommentCount } = useApp()
+
+  const handlePostMenu = (post) => {
+    const isOwn = post.author === (user?.username || 'johndoe')
+    if (isOwn) {
+      Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deletePost(post.id) },
+      ])
+    } else {
+      Alert.alert('Report post', 'Report this post for review?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Report', onPress: () => Alert.alert('Report submitted', 'Thank you. Your report has been submitted for review.') },
+      ])
+    }
+  }
   const [profileOpen, setProfileOpen] = useState(false)
-  const [user, setUser] = useState(DEFAULT_USER)
+  const [commentsOpenForPostId, setCommentsOpenForPostId] = useState(null)
+  const [commentInput, setCommentInput] = useState('')
+
+  const handleAddComment = () => {
+    if (!commentsOpenForPostId || !commentInput.trim()) return
+    addComment(commentsOpenForPostId, { text: commentInput.trim(), time: 'Just now' })
+    setCommentInput('')
+  }
+
+  const closeComments = () => {
+    setCommentsOpenForPostId(null)
+    setCommentInput('')
+  }
 
   const handleEditPicture = () => {
     Alert.alert(
@@ -137,18 +176,20 @@ export default function HomeScreen({ navigation }) {
       <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
         <Text style={styles.brand}>StructSure</Text>
         <TouchableOpacity onPress={() => setProfileOpen(true)} style={styles.profileBtn} activeOpacity={0.7} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          {user.photo ? (
-            <Image source={{ uri: user.photo }} style={styles.profilePic} />
-          ) : (
-            <View style={styles.profilePicPlaceholder}>
-              <Ionicons name="person" size={22} color="#888" />
-            </View>
-          )}
+          <Image source={user?.photo ? { uri: user.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
         </TouchableOpacity>
       </View>
       <ScrollView style={styles.feed} contentContainerStyle={styles.feedContent}>
-        {demoPosts.map((p) => (
-          <PostCard key={p.id} post={p} />
+        {posts.map((p) => (
+          <PostCard
+            key={p.id}
+            post={p}
+            isUpvoted={upvotedPosts.has(p.id)}
+            onUpvote={toggleUpvote}
+            onComment={setCommentsOpenForPostId}
+            displayCommentCount={getDisplayCommentCount(p.id)}
+            onPostMenu={handlePostMenu}
+          />
         ))}
       </ScrollView>
 
@@ -161,13 +202,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
             <View style={styles.profileContent}>
               <View style={styles.profilePicLarge}>
-                {user.photo ? (
-                  <Image source={{ uri: user.photo }} style={styles.profilePicLargeImg} />
-                ) : (
-                  <View style={styles.profilePicLargePlaceholder}>
-                    <Ionicons name="person" size={64} color="#555" />
-                  </View>
-                )}
+                <Image source={user?.photo ? { uri: user.photo } : require('../assets/johndoe.png')} style={styles.profilePicLargeImg} />
               </View>
               <TouchableOpacity style={styles.editPicBtn} onPress={handleEditPicture}>
                 <Text style={styles.editPicText}>Edit picture</Text>
@@ -187,7 +222,7 @@ export default function HomeScreen({ navigation }) {
                 placeholderTextColor="#666"
                 keyboardType="email-address"
               />
-              <TouchableOpacity style={styles.profileActionBtn} onPress={() => setProfileOpen(false)}>
+              <TouchableOpacity style={styles.profileActionBtn} onPress={() => { setProfileOpen(false); navigation.navigate('Profile'); }}>
                 <Text style={styles.profileActionText}>Posts status</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.profileActionBtn, styles.profileActionOutlined]} onPress={() => { setProfileOpen(false); navigation.navigate('Login'); }}>
@@ -195,6 +230,73 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      <Modal visible={!!commentsOpenForPostId} transparent animationType="slide">
+        <View style={styles.commentModalOverlay}>
+          <TouchableOpacity style={styles.commentModalBackdrop} activeOpacity={1} onPress={closeComments} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ width: '100%' }}
+          >
+          <View style={[styles.commentModalPanel, { paddingBottom: insets.bottom + 80 }]}>
+            <View style={styles.commentModalHandle} />
+            <View style={styles.commentModalHeader}>
+              <Text style={styles.commentModalTitle}>Comments</Text>
+              <TouchableOpacity onPress={closeComments} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <Ionicons name="close" size={28} color="#e0e0e0" />
+              </TouchableOpacity>
+            </View>
+            {commentsOpenForPostId && (
+              <>
+                <View style={styles.commentModalPostPreview}>
+                  <Text style={styles.commentModalPostAuthor}>
+                    {(posts.find((p) => p.id === commentsOpenForPostId) || {}).author}
+                  </Text>
+                  <Text style={styles.commentModalPostTitle} numberOfLines={2}>
+                    {(posts.find((p) => p.id === commentsOpenForPostId) || {}).title}
+                  </Text>
+                </View>
+                <ScrollView
+                  style={styles.commentList}
+                  contentContainerStyle={styles.commentListContent}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  {(commentsByPost[commentsOpenForPostId] || []).map((c) => (
+                    <View key={c.id} style={styles.commentItem}>
+                      <Text style={styles.commentAuthor}>{c.author}</Text>
+                      <Text style={styles.commentText}>{c.text}</Text>
+                      <Text style={styles.commentTime}>{c.time}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+                <View style={styles.commentInputRow}>
+                  <TextInput
+                    style={styles.commentInput}
+                    placeholder="Add a comment..."
+                    placeholderTextColor="#666"
+                    value={commentInput}
+                    onChangeText={setCommentInput}
+                    multiline
+                    maxLength={500}
+                  />
+                  <TouchableOpacity
+                    style={[styles.commentPostBtn, !commentInput.trim() && styles.commentPostBtnDisabled]}
+                    onPress={handleAddComment}
+                    disabled={!commentInput.trim()}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.commentPostText, !commentInput.trim() && styles.commentPostTextDisabled]}>
+                      Post
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>
@@ -228,6 +330,7 @@ const styles = StyleSheet.create({
   feedContent: { padding: 14, gap: 14 },
   card: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  menuBtn: { marginLeft: 'auto', padding: 4 },
   avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,255,127,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   avatarText: { color: '#e0e0e0', fontWeight: '700' },
   meta: {},
@@ -240,8 +343,80 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingVertical: 8 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' },
   dotActive: { backgroundColor: '#00ff7f', width: 8, height: 8, borderRadius: 4 },
-  title: { fontSize: 16, fontWeight: '600', color: '#e0e0e0', marginBottom: 10 },
+  title: { fontSize: 16, fontWeight: '600', color: '#e0e0e0', marginBottom: 8 },
+  body: { fontSize: 13, color: 'rgba(224,224,224,0.9)', lineHeight: 20, marginBottom: 10 },
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
+  tagChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(0,255,127,0.4)',
+    backgroundColor: 'rgba(0,255,127,0.1)',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  tagChipText: { fontSize: 12, color: '#00ff7f' },
   actions: { flexDirection: 'row', gap: 18 },
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   actionText: { color: '#888', fontSize: 13 },
+  actionTextActive: { color: '#00ff7f' },
+  commentModalOverlay: { flex: 1, justifyContent: 'flex-end' },
+  commentModalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
+  commentModalPanel: {
+    backgroundColor: '#0d0d0d',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '85%',
+    paddingHorizontal: 16,
+  },
+  commentModalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  commentModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  commentModalTitle: { fontSize: 18, fontWeight: '600', color: '#e0e0e0' },
+  commentModalPostPreview: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  commentModalPostAuthor: { fontSize: 14, fontWeight: '600', color: '#00ff7f', marginBottom: 4 },
+  commentModalPostTitle: { fontSize: 13, color: 'rgba(224,224,224,0.8)' },
+  commentList: { maxHeight: 280 },
+  commentListContent: { paddingVertical: 12, paddingBottom: 20 },
+  commentItem: { marginBottom: 16 },
+  commentAuthor: { fontSize: 14, fontWeight: '600', color: '#e0e0e0', marginBottom: 4 },
+  commentText: { fontSize: 14, color: 'rgba(224,224,224,0.9)', lineHeight: 20 },
+  commentTime: { fontSize: 12, color: '#666', marginTop: 4 },
+  commentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: '#e0e0e0',
+    fontSize: 15,
+    maxHeight: 100,
+  },
+  commentPostBtn: { paddingVertical: 12, paddingHorizontal: 16 },
+  commentPostBtnDisabled: { opacity: 0.5 },
+  commentPostText: { fontSize: 15, fontWeight: '600', color: '#00ff7f' },
+  commentPostTextDisabled: { color: '#666' },
 })

@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
 
+import { AppProvider } from './context/AppContext'
 import LoadingScreen from './screens/LoadingScreen'
 import LoginScreen from './screens/LoginScreen'
 import SignupScreen from './screens/SignupScreen'
@@ -69,12 +70,14 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
       <StatusBar style="light" />
+      <AppProvider>
       <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0d0d0d' } }}>
         <Stack.Screen name="Loading" component={LoadingScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="Main" component={MainTabs} />
       </Stack.Navigator>
+      </AppProvider>
     </NavigationContainer>
     </SafeAreaProvider>
   )

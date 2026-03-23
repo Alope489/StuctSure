@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from 'react-native'
 import Slider from '@react-native-community/slider'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Location from 'expo-location'
+import { useApp } from '../context/AppContext'
 
 const categories = [
   { id: 'structural', label: 'structural' },
@@ -22,6 +23,7 @@ const categories = [
 export default function NewPostScreen() {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
+  const { user, addPost } = useApp()
   const [permission, requestPermission] = useCameraPermissions()
   const [locationPermission, requestLocationPermission] = Location.useForegroundPermissions()
   const [caption, setCaption] = useState('')
@@ -60,6 +62,43 @@ export default function NewPostScreen() {
     setGpsCoords(null)
   }
 
+  const handleCancel = () => {
+    Alert.alert('Are you sure?', 'Your post will not be saved. Do you want to discard it?', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => navigation.navigate('Home') },
+    ])
+  }
+
+  const handleCreatePost = () => {
+    const title = caption.trim().slice(0, 60) || 'New damage report'
+    const locPart = gpsCoords
+      ? `\n\nLocation: Captured at ${gpsCoords.latitude.toFixed(6)}, ${gpsCoords.longitude.toFixed(6)}`
+      : ''
+    const body = caption.trim() + locPart || 'No description provided.'
+
+    const newPost = {
+      id: `new-${Date.now()}`,
+      author: user?.username || 'johndoe',
+      time: 'Just now',
+      sortOrder: 0,
+      tags: [...selected],
+      tagsMore: 0,
+      title,
+      body,
+      likes: 0,
+      comments: 0,
+      images: capturedPhoto ? [{ uri: capturedPhoto }] : [],
+    }
+
+    addPost(newPost)
+    setCaption('')
+    setCapturedPhoto(null)
+    setGpsCoords(null)
+    setSelected(new Set(['structural']))
+    setSeverity(5)
+    navigation.navigate('Home')
+  }
+
   if (!permission) {
     return <View style={[styles.container, { paddingTop: insets.top + 24 }]}><Text style={styles.text}>Loading camera…</Text></View>
   }
@@ -77,7 +116,11 @@ export default function NewPostScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+        <TouchableOpacity
+          onPress={() => (caption || capturedPhoto ? handleCancel() : navigation.navigate('Home'))}
+          style={styles.backBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>New post</Text>
@@ -157,6 +200,21 @@ export default function NewPostScreen() {
             <Text style={styles.gpsText}>{gpsCoords.latitude.toFixed(6)}, {gpsCoords.longitude.toFixed(6)}</Text>
           </View>
         )}
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
+            <Text style={styles.cancelBtnText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.createBtn, (!capturedPhoto || !caption.trim()) && styles.createBtnDisabled]}
+            onPress={handleCreatePost}
+            disabled={!capturedPhoto || !caption.trim()}
+          >
+            <Text style={[styles.createBtnText, (!capturedPhoto || !caption.trim()) && styles.createBtnTextDisabled]}>
+              Create Post
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   )
@@ -191,9 +249,30 @@ const styles = StyleSheet.create({
   severityRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   slider: { flex: 1, height: 40 },
   severityValue: { fontSize: 18, fontWeight: '600', color: '#00ff7f', minWidth: 24, textAlign: 'right' },
-  gpsBox: { backgroundColor: 'rgba(0,255,127,0.08)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(0,255,127,0.2)' },
+  gpsBox: { backgroundColor: 'rgba(0,255,127,0.08)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(0,255,127,0.2)', marginBottom: 24 },
   gpsLabel: { fontSize: 12, color: '#00ff7f', marginBottom: 4 },
   gpsText: { fontSize: 14, color: '#e0e0e0' },
+  buttonRow: { flexDirection: 'row', marginTop: 8 },
+  cancelBtn: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+  },
+  cancelBtnText: { color: '#888', fontWeight: '600', fontSize: 16 },
+  createBtn: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: '#00ff7f',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  createBtnDisabled: { opacity: 0.5 },
+  createBtnText: { color: '#061014', fontWeight: '600', fontSize: 16 },
+  createBtnTextDisabled: { color: '#333' },
   btnPrimary: { backgroundColor: '#00a0a0', borderRadius: 12, padding: 14, marginTop: 16 },
   btnText: { color: '#fff', fontWeight: '600' },
 })

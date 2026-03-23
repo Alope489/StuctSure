@@ -89,13 +89,7 @@ function Notifications() {
           <span className="notif-brand-name">StructSure</span>
         </div>
         <button className="notif-profile-btn" type="button" aria-label="Profile">
-          {DEFAULT_USER.photo ? (
-            <img src={DEFAULT_USER.photo} alt="" className="notif-profile-pic" />
-          ) : (
-            <span className="notif-profile-placeholder" aria-hidden="true">
-              <Icon name="user" />
-            </span>
-          )}
+          <img src={DEFAULT_USER.photo || '/johndoe.png'} alt="" className="notif-profile-pic" />
         </button>
       </header>
 
