@@ -4,9 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
-import { getImageSource } from '../data/posts'
+import { getImageSource, getResolutionStatus } from '../data/posts'
 
-function PostCard({ post, isUpvoted, onUpvote, onComment, displayCommentCount, onPostMenu }) {
+function PostCard({ post, isUpvoted, onUpvote, onComment, displayCommentCount, onPostMenu, onBuildingPress, buildingLabel }) {
   const { width: winWidth } = useWindowDimensions()
   const width = winWidth || Dimensions.get('window').width
   const slideWidth = Math.max(width - 52, 280)
@@ -64,20 +64,33 @@ function PostCard({ post, isUpvoted, onUpvote, onComment, displayCommentCount, o
       ) : null}
       <Text style={styles.title}>{post.title}</Text>
       {post.body ? <Text style={styles.body}>{post.body}</Text> : null}
-      {((post.tags?.length || 0) > 0 || (post.tagsMore || 0) > 0) && (
-        <View style={styles.tagsRow}>
-          {(post.tags || []).map((tag) => (
-            <View key={tag} style={styles.tagChip}>
-              <Text style={styles.tagChipText}>{tag}</Text>
-            </View>
-          ))}
-          {(post.tagsMore || 0) > 0 && (
-            <View style={styles.tagChip}>
-              <Text style={styles.tagChipText}>{post.tagsMore}</Text>
-            </View>
-          )}
+      {onBuildingPress && buildingLabel ? (
+        <TouchableOpacity style={styles.buildingLink} onPress={onBuildingPress} activeOpacity={0.7}>
+          <Ionicons name="business-outline" size={16} color="#00ff7f" />
+          <Text style={styles.buildingLinkText}>{buildingLabel}</Text>
+          <Ionicons name="chevron-forward" size={16} color="#666" />
+        </TouchableOpacity>
+      ) : null}
+      <View style={styles.tagsRow}>
+        <View
+          style={[
+            styles.tagChip,
+            getResolutionStatus(post) === 'resolved' ? styles.tagChipResolved : styles.tagChipUnresolved,
+          ]}
+        >
+          <Text style={styles.tagChipTextMuted}>{getResolutionStatus(post)}</Text>
         </View>
-      )}
+        {(post.tags || []).map((tag) => (
+          <View key={tag} style={styles.tagChip}>
+            <Text style={styles.tagChipText}>{tag}</Text>
+          </View>
+        ))}
+        {(post.tagsMore || 0) > 0 && (
+          <View style={styles.tagChip}>
+            <Text style={styles.tagChipText}>{post.tagsMore}</Text>
+          </View>
+        )}
+      </View>
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionRow} onPress={() => onUpvote(post.id)} activeOpacity={0.6}>
           <Ionicons name={isUpvoted ? 'arrow-up' : 'arrow-up-outline'} size={20} color={isUpvoted ? '#00ff7f' : '#888'} />
@@ -94,14 +107,43 @@ function PostCard({ post, isUpvoted, onUpvote, onComment, displayCommentCount, o
 
 export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets()
-  const { posts, user, setUser, upvotedPosts, commentsByPost, toggleUpvote, addComment, deletePost, getDisplayCommentCount } = useApp()
+  const {
+    posts,
+    buildings,
+    user,
+    setUser,
+    upvotedPosts,
+    commentsByPost,
+    toggleUpvote,
+    addComment,
+    deletePost,
+    updatePostResolution,
+    getDisplayCommentCount,
+  } = useApp()
 
   const handlePostMenu = (post) => {
     const isOwn = post.author === (user?.username || 'johndoe')
     if (isOwn) {
-      Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+      Alert.alert('Your post', 'Choose an action.', [
+        {
+          text: 'Change status',
+          onPress: () =>
+            Alert.alert('Report status', 'Mark this report as resolved or unresolved.', [
+              { text: 'Unresolved', onPress: () => updatePostResolution(post.id, 'unresolved') },
+              { text: 'Resolved', onPress: () => updatePostResolution(post.id, 'resolved') },
+              { text: 'Cancel', style: 'cancel' },
+            ]),
+        },
+        {
+          text: 'Delete post',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete', style: 'destructive', onPress: () => deletePost(post.id) },
+            ]),
+        },
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deletePost(post.id) },
       ])
     } else {
       Alert.alert('Report post', 'Report this post for review?', [
@@ -189,6 +231,12 @@ export default function HomeScreen({ navigation }) {
             onComment={setCommentsOpenForPostId}
             displayCommentCount={getDisplayCommentCount(p.id)}
             onPostMenu={handlePostMenu}
+            onBuildingPress={
+              p.buildingId
+                ? () => navigation.navigate('Search', { openBuildingId: p.buildingId })
+                : undefined
+            }
+            buildingLabel={p.buildingName || buildings.find((b) => b.id === p.buildingId)?.name}
           />
         ))}
       </ScrollView>
@@ -345,7 +393,22 @@ const styles = StyleSheet.create({
   dotActive: { backgroundColor: '#00ff7f', width: 8, height: 8, borderRadius: 4 },
   title: { fontSize: 16, fontWeight: '600', color: '#e0e0e0', marginBottom: 8 },
   body: { fontSize: 13, color: 'rgba(224,224,224,0.9)', lineHeight: 20, marginBottom: 10 },
+  buildingLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,255,127,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,255,127,0.2)',
+  },
+  buildingLinkText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#00ff7f' },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
+  tagChipResolved: { borderColor: 'rgba(0,255,127,0.35)', backgroundColor: 'rgba(0,255,127,0.12)' },
+  tagChipUnresolved: { borderColor: 'rgba(255,193,7,0.45)', backgroundColor: 'rgba(255,193,7,0.1)' },
   tagChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -357,6 +420,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tagChipText: { fontSize: 12, color: '#00ff7f' },
+  tagChipTextMuted: { fontSize: 12, color: '#c8e6c9', textTransform: 'capitalize' },
   actions: { flexDirection: 'row', gap: 18 },
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   actionText: { color: '#888', fontSize: 13 },

@@ -45,6 +45,7 @@ export default function NewPostScreen() {
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [nearbyError, setNearbyError] = useState(null)
   const [linkedBuilding, setLinkedBuilding] = useState(null)
+  const [resolutionStatus, setResolutionStatus] = useState(null)
   const [cameraReady, setCameraReady] = useState(false)
   const cameraRef = useRef(null)
 
@@ -133,6 +134,7 @@ export default function NewPostScreen() {
       buildingImageUrl: linkedBuilding.photoUrl || undefined,
       latitude: linkedBuilding.lat,
       longitude: linkedBuilding.lon,
+      resolutionStatus,
     })
     setCaption('')
     setCapturedPhoto(null)
@@ -140,6 +142,7 @@ export default function NewPostScreen() {
     setNearbyOptions([])
     setNearbyError(null)
     setLinkedBuilding(null)
+    setResolutionStatus(null)
     setSelected(new Set(['structural']))
     setSeverity(5)
     navigation.navigate('Home')
@@ -210,6 +213,22 @@ export default function NewPostScreen() {
           placeholderTextColor="#888"
           multiline
         />
+
+        <Text style={styles.label}>Status</Text>
+        <View style={styles.chips}>
+          <TouchableOpacity
+            style={[styles.chip, resolutionStatus === 'unresolved' && styles.chipActive]}
+            onPress={() => setResolutionStatus('unresolved')}
+          >
+            <Text style={[styles.chipText, resolutionStatus === 'unresolved' && styles.chipTextActive]}>Unresolved</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.chip, resolutionStatus === 'resolved' && styles.chipActive]}
+            onPress={() => setResolutionStatus('resolved')}
+          >
+            <Text style={[styles.chipText, resolutionStatus === 'resolved' && styles.chipTextActive]}>Resolved</Text>
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.label}>Category</Text>
         <View style={styles.chips}>
@@ -283,15 +302,15 @@ export default function NewPostScreen() {
           <TouchableOpacity
             style={[
               styles.createBtn,
-              (!capturedPhoto || !caption.trim() || !linkedBuilding) && styles.createBtnDisabled,
+              (!capturedPhoto || !caption.trim() || !linkedBuilding || !resolutionStatus) && styles.createBtnDisabled,
             ]}
             onPress={handleCreatePost}
-            disabled={!capturedPhoto || !caption.trim() || !linkedBuilding}
+            disabled={!capturedPhoto || !caption.trim() || !linkedBuilding || !resolutionStatus}
           >
             <Text
               style={[
                 styles.createBtnText,
-                (!capturedPhoto || !caption.trim() || !linkedBuilding) && styles.createBtnTextDisabled,
+                (!capturedPhoto || !caption.trim() || !linkedBuilding || !resolutionStatus) && styles.createBtnTextDisabled,
               ]}
             >
               Create Post

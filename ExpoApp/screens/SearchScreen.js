@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { Alert } from 'react-native'
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native'
 import {
   View,
   Text,
@@ -14,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 
 import { useApp } from '../context/AppContext'
-import { getImageSource } from '../data/posts'
+import { getImageSource, getResolutionStatus } from '../data/posts'
 
 function BuildingProfileCircle({ uri, size }) {
   const [loadFailed, setLoadFailed] = useState(false)
@@ -104,11 +105,15 @@ function BuildingDetailView({ building, posts, onBack, onPostSelect }) {
   const padding = 28
   const gap = 4
   const gridItemSize = (width - padding - gap * 2) / 3
-  const postList = posts
+  const [postTab, setPostTab] = useState('unresolved')
+  const forBuilding = posts
     .filter((p) => p.buildingId === building?.id)
     .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
+  const resolvedCount = forBuilding.filter((p) => getResolutionStatus(p) === 'resolved').length
+  const unresolvedCount = forBuilding.filter((p) => getResolutionStatus(p) === 'unresolved').length
+  const postList = forBuilding.filter((p) => getResolutionStatus(p) === postTab)
   const allImages = postList.flatMap((p) => (p?.images || []).map((img) => ({ post: p, img })))
-  const tagAggregate = postList.reduce((sum, p) => sum + (p.tags?.length || 0) + (p.tagsMore || 0), 0)
+  const tagAggregate = forBuilding.reduce((sum, p) => sum + (p.tags?.length || 0) + (p.tagsMore || 0), 0)
 
   return (
     <ScrollView style={styles.detailScroll} contentContainerStyle={styles.detailScrollContent}>
@@ -126,7 +131,7 @@ function BuildingDetailView({ building, posts, onBack, onPostSelect }) {
             <Text style={styles.badgeText}>{tagAggregate} Tags</Text>
           </View>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{postList.length} Reports</Text>
+            <Text style={styles.badgeText}>{forBuilding.length} Reports</Text>
           </View>
         </View>
       </View>
@@ -134,28 +139,60 @@ function BuildingDetailView({ building, posts, onBack, onPostSelect }) {
       <Text style={styles.buildingName}>{building?.name}</Text>
       <Text style={styles.buildingAddress}>{building?.address}</Text>
 
-      <View style={[styles.photoGrid, { gap }]}>
-        {allImages.slice(0, 9).map((item, idx) => (
-          <TouchableOpacity
-            key={`${item.post?.id}-${idx}`}
-            style={[styles.photoGridItem, { width: gridItemSize, height: gridItemSize }]}
-            onPress={() => onPostSelect(item.post)}
-            activeOpacity={0.8}
-          >
-            <Image source={getImageSource(item.img)} style={styles.photoGridImg} resizeMode="cover" />
-          </TouchableOpacity>
-        ))}
+      <View style={styles.buildingStatusSummary}>
+        <Text style={styles.buildingStatusSummaryText}>
+          {unresolvedCount} unresolved · {resolvedCount} resolved
+        </Text>
       </View>
+
+      <View style={styles.buildingTabs}>
+        <TouchableOpacity
+          style={[styles.buildingTab, postTab === 'unresolved' && styles.buildingTabActive]}
+          onPress={() => setPostTab('unresolved')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.buildingTabText, postTab === 'unresolved' && styles.buildingTabTextActive]}>
+            Unresolved ({unresolvedCount})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.buildingTab, postTab === 'resolved' && styles.buildingTabActive]}
+          onPress={() => setPostTab('resolved')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.buildingTabText, postTab === 'resolved' && styles.buildingTabTextActive]}>
+            Resolved ({resolvedCount})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {allImages.length === 0 ? (
+        <Text style={styles.buildingTabEmpty}>No {postTab} reports for this building yet.</Text>
+      ) : (
+        <View style={[styles.photoGrid, { gap }]}>
+          {allImages.slice(0, 9).map((item, idx) => (
+            <TouchableOpacity
+              key={`${item.post?.id}-${idx}`}
+              style={[styles.photoGridItem, { width: gridItemSize, height: gridItemSize }]}
+              onPress={() => onPostSelect(item.post)}
+              activeOpacity={0.8}
+            >
+              <Image source={getImageSource(item.img)} style={styles.photoGridImg} resizeMode="cover" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </ScrollView>
   )
 }
 
-function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPostMenu }) {
+function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPostMenu, onOpenBuildingProfile }) {
   const insets = useSafeAreaInsets()
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const images = post?.images || []
   const scrollRef = useRef(null)
   const commentCount = getDisplayCommentCount ? getDisplayCommentCount(post?.id) : (post?.comments || 0)
+  const canOpenBuilding = !!(building || post?.buildingId)
 
   return (
     <ScrollView style={styles.postDetailScroll} contentContainerStyle={styles.postDetailContent}>
@@ -167,10 +204,18 @@ function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPost
       </View>
 
       {(building || post?.buildingName) && (
-        <View style={styles.postDetailBuildingBar}>
-          <Text style={styles.postDetailBuildingName}>{building?.name || post?.buildingName}</Text>
-          <Text style={styles.postDetailBuildingAddress}>{building?.address || post?.buildingAddress || ''}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.postDetailBuildingBar}
+          onPress={canOpenBuilding ? onOpenBuildingProfile : undefined}
+          activeOpacity={canOpenBuilding ? 0.7 : 1}
+          disabled={!canOpenBuilding}
+        >
+          <View style={styles.postDetailBuildingBarInner}>
+            <Text style={styles.postDetailBuildingName}>{building?.name || post?.buildingName}</Text>
+            <Text style={styles.postDetailBuildingAddress}>{building?.address || post?.buildingAddress || ''}</Text>
+          </View>
+          {canOpenBuilding ? <Ionicons name="chevron-forward" size={20} color="#666" /> : null}
+        </TouchableOpacity>
       )}
 
       <View style={styles.postDetailAuthorRow}>
@@ -219,6 +264,14 @@ function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPost
             </View>
           )}
           <View style={styles.postDetailTags}>
+            <View
+              style={[
+                styles.tagChip,
+                getResolutionStatus(post) === 'resolved' ? styles.tagChipResolved : styles.tagChipUnresolved,
+              ]}
+            >
+              <Text style={styles.tagChipStatusText}>{getResolutionStatus(post)}</Text>
+            </View>
             {(post?.tags || []).map((tag) => (
               <View key={tag} style={styles.tagChip}>
                 <Text style={styles.tagChipText}>{tag}</Text>
@@ -255,14 +308,53 @@ function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPost
 }
 
 export default function SearchScreen() {
-  const { posts, buildings, user, deletePost, getDisplayCommentCount } = useApp()
+  const route = useRoute()
+  const navigation = useNavigation()
+  const { posts, buildings, user, deletePost, getDisplayCommentCount, updatePostResolution } = useApp()
+
+  const [view, setView] = useState('map') // 'map' | 'building' | 'post'
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedBuilding, setSelectedBuilding] = useState(null)
+  const [selectedPost, setSelectedPost] = useState(null)
+
+  const goBack = () => {
+    if (view === 'post') setView('building')
+    else if (view === 'building') {
+      setView('map')
+      setSelectedBuilding(null)
+    }
+  }
 
   const handlePostMenu = (post) => {
     const isOwn = post?.author === (user?.username || 'johndoe')
     if (isOwn) {
-      Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+      Alert.alert('Your post', 'Choose an action.', [
+        {
+          text: 'Change status',
+          onPress: () =>
+            Alert.alert('Report status', 'Mark this report as resolved or unresolved.', [
+              { text: 'Unresolved', onPress: () => updatePostResolution(post.id, 'unresolved') },
+              { text: 'Resolved', onPress: () => updatePostResolution(post.id, 'resolved') },
+              { text: 'Cancel', style: 'cancel' },
+            ]),
+        },
+        {
+          text: 'Delete post',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => {
+                  deletePost(post.id)
+                  goBack()
+                },
+              },
+            ]),
+        },
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => { deletePost(post.id); goBack() } },
       ])
     } else {
       Alert.alert('Report post', 'Report this post for review?', [
@@ -271,10 +363,21 @@ export default function SearchScreen() {
       ])
     }
   }
-  const [view, setView] = useState('map') // 'map' | 'building' | 'post'
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedBuilding, setSelectedBuilding] = useState(null)
-  const [selectedPost, setSelectedPost] = useState(null)
+
+  useFocusEffect(
+    useCallback(() => {
+      const id = route.params?.openBuildingId
+      if (!id) return undefined
+      const b = buildings.find((x) => x.id === id)
+      if (b) {
+        setSelectedBuilding(b)
+        setView('building')
+        setSelectedPost(null)
+      }
+      navigation.setParams({ openBuildingId: undefined })
+      return undefined
+    }, [route.params?.openBuildingId, buildings, navigation])
+  )
 
   const handleBuildingSelect = (building) => {
     setSelectedBuilding(building)
@@ -285,14 +388,6 @@ export default function SearchScreen() {
   const handlePostSelect = (post) => {
     setSelectedPost(post)
     setView('post')
-  }
-
-  const goBack = () => {
-    if (view === 'post') setView('building')
-    else if (view === 'building') {
-      setView('map')
-      setSelectedBuilding(null)
-    }
   }
 
   if (view === 'building' && selectedBuilding) {
@@ -307,13 +402,28 @@ export default function SearchScreen() {
   }
 
   if (view === 'post' && selectedPost) {
+    const buildingForPost =
+      selectedBuilding?.id === selectedPost.buildingId
+        ? selectedBuilding
+        : buildings.find((b) => b.id === selectedPost.buildingId)
     return (
       <PostDetailView
         post={selectedPost}
-        building={selectedBuilding}
+        building={buildingForPost}
         onBack={goBack}
         getDisplayCommentCount={getDisplayCommentCount}
         onPostMenu={handlePostMenu}
+        onOpenBuildingProfile={() => {
+          const b =
+            selectedBuilding?.id === selectedPost.buildingId
+              ? selectedBuilding
+              : buildings.find((x) => x.id === selectedPost.buildingId)
+          if (b) {
+            setSelectedBuilding(b)
+            setView('building')
+            setSelectedPost(null)
+          }
+        }}
       />
     )
   }
@@ -420,7 +530,23 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 13, fontWeight: '600', color: '#00ff7f' },
   buildingName: { fontSize: 18, fontWeight: '600', color: '#e0e0e0', marginHorizontal: 16, marginBottom: 4 },
-  buildingAddress: { fontSize: 14, color: '#888', marginHorizontal: 16, marginBottom: 20 },
+  buildingAddress: { fontSize: 14, color: '#888', marginHorizontal: 16, marginBottom: 12 },
+  buildingStatusSummary: { marginHorizontal: 16, marginBottom: 16 },
+  buildingStatusSummaryText: { fontSize: 14, color: '#aaa', fontWeight: '500' },
+  buildingTabs: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 16, gap: 10 },
+  buildingTab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+  },
+  buildingTabActive: { borderColor: '#00ff7f', backgroundColor: 'rgba(0,255,127,0.12)' },
+  buildingTabText: { fontSize: 13, fontWeight: '600', color: '#888' },
+  buildingTabTextActive: { color: '#00ff7f' },
+  buildingTabEmpty: { marginHorizontal: 16, marginBottom: 24, fontSize: 14, color: '#666', textAlign: 'center' },
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -432,11 +558,15 @@ const styles = StyleSheet.create({
   postDetailScroll: { flex: 1, backgroundColor: '#0d0d0d' },
   postDetailContent: { paddingBottom: 40 },
   postDetailBuildingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
+    gap: 8,
   },
+  postDetailBuildingBarInner: { flex: 1 },
   postDetailBuildingName: { fontSize: 14, fontWeight: '600', color: '#e0e0e0' },
   postDetailBuildingAddress: { fontSize: 12, color: '#888', marginTop: 2 },
   postDetailBody: {
@@ -455,7 +585,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,255,127,0.4)',
     backgroundColor: 'rgba(0,255,127,0.1)',
   },
+  tagChipResolved: { borderColor: 'rgba(0,255,127,0.35)', backgroundColor: 'rgba(0,255,127,0.12)' },
+  tagChipUnresolved: { borderColor: 'rgba(255,193,7,0.45)', backgroundColor: 'rgba(255,193,7,0.1)' },
   tagChipText: { fontSize: 12, color: '#00ff7f' },
+  tagChipStatusText: { fontSize: 12, color: '#c8e6c9', textTransform: 'capitalize' },
   postDetailImageWrap: { marginBottom: 12 },
   postDetailImageSlide: { aspectRatio: 1 },
   postDetailImage: { width: '100%', height: '100%', borderRadius: 0 },

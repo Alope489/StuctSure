@@ -45,6 +45,19 @@ export function AppProvider({ children }) {
     })
   }, [])
 
+  const updatePostResolution = useCallback(
+    (postId, resolutionStatus) => {
+      if (resolutionStatus !== 'resolved' && resolutionStatus !== 'unresolved') return
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p.id !== postId || p.author !== user.username) return p
+          return { ...p, resolutionStatus }
+        })
+      )
+    },
+    [user.username]
+  )
+
   const toggleUpvote = useCallback((postId) => {
     setUpvotedPosts((prev) => {
       const next = new Set(prev)
@@ -77,6 +90,7 @@ export function AppProvider({ children }) {
     commentsByPost,
     addPost,
     deletePost,
+    updatePostResolution,
     toggleUpvote,
     addComment,
     getDisplayCommentCount: (postId) => {

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
-import { getImageSource } from '../data/posts'
+import { getImageSource, getResolutionStatus } from '../data/posts'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const POST_BLOCK_HEIGHT = SCREEN_WIDTH + 420
@@ -41,6 +41,14 @@ function PostDetailBlock({ post, commentsByPost, upvotedPosts, toggleUpvote, get
         <Text style={styles.postDetailTitle}>{post.title}</Text>
         {post.body ? <Text style={styles.postDetailBody}>{post.body}</Text> : null}
         <View style={styles.postDetailTags}>
+          <View
+            style={[
+              styles.tagChip,
+              getResolutionStatus(post) === 'resolved' ? styles.tagChipResolved : styles.tagChipUnresolved,
+            ]}
+          >
+            <Text style={styles.tagChipStatusText}>{getResolutionStatus(post)}</Text>
+          </View>
           {tags.map((tag) => (
             <View key={tag} style={styles.tagChip}>
               <Text style={styles.tagChipText}>{tag}</Text>
@@ -120,14 +128,38 @@ function PostDetailBlock({ post, commentsByPost, upvotedPosts, toggleUpvote, get
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
-  const { user, posts, commentsByPost, addComment, deletePost, upvotedPosts, toggleUpvote, getDisplayCommentCount } = useApp()
+  const { user, posts, commentsByPost, addComment, deletePost, updatePostResolution, upvotedPosts, toggleUpvote, getDisplayCommentCount } = useApp()
 
   const handlePostMenu = (post) => {
     const isOwn = post.author === (user?.username || 'johndoe')
     if (isOwn) {
-      Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+      Alert.alert('Your post', 'Choose an action.', [
+        {
+          text: 'Change status',
+          onPress: () =>
+            Alert.alert('Report status', 'Mark this report as resolved or unresolved.', [
+              { text: 'Unresolved', onPress: () => updatePostResolution(post.id, 'unresolved') },
+              { text: 'Resolved', onPress: () => updatePostResolution(post.id, 'resolved') },
+              { text: 'Cancel', style: 'cancel' },
+            ]),
+        },
+        {
+          text: 'Delete post',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => {
+                  deletePost(post.id)
+                  setSelectedPostId(null)
+                },
+              },
+            ]),
+        },
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => { deletePost(post.id); setSelectedPostId(null) } },
       ])
     } else {
       Alert.alert('Report post', 'Report this post for review?', [
@@ -387,6 +419,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tagChipText: { fontSize: 12, color: '#00ff7f' },
+  tagChipResolved: { borderColor: 'rgba(0,255,127,0.35)', backgroundColor: 'rgba(0,255,127,0.12)' },
+  tagChipUnresolved: { borderColor: 'rgba(255,193,7,0.45)', backgroundColor: 'rgba(255,193,7,0.1)' },
+  tagChipStatusText: { fontSize: 12, color: '#c8e6c9', textTransform: 'capitalize' },
   carouselDots: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 10 },
   carouselDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)', marginHorizontal: 3 },
   carouselDotActive: { backgroundColor: '#00ff7f', width: 8, height: 8, borderRadius: 4 },

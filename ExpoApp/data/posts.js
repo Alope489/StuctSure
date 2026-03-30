@@ -11,6 +11,7 @@ export const johndoePosts = [
     sortOrder: 2,
     tags: ['structural', 'plumbing'],
     tagsMore: 0,
+    resolutionStatus: 'resolved',
     title: 'Ceiling water damage in high-rise unit',
     body: 'Location: Downtown Miami high-rise\nAddress: 1101 Brickell Ave area\nVisited: Today\n\nLarge water stain and crack in the ceiling. Paint is peeling in several spots. Leak appears to be from above. Needs inspection.',
     likes: 124,
@@ -23,8 +24,9 @@ export const johndoePosts = [
     author: 'johndoe',
     time: '1 day ago',
     sortOrder: 24,
-    tags: ['plumbing', 'unresolved'],
+    tags: ['plumbing'],
     tagsMore: 0,
+    resolutionStatus: 'unresolved',
     title: 'Flooded living room - plumbing failure',
     body: 'Location: Town Park Estates\nAddress: SW 112th Ave area\nVisited: Yesterday\n\nLiving room flooded from apparent plumbing failure. Water still present. Ceiling fan reflection visible in standing water. Fireplace and windows affected.',
     likes: 89,
@@ -39,6 +41,7 @@ export const johndoePosts = [
     sortOrder: 72,
     tags: ['structural'],
     tagsMore: 0,
+    resolutionStatus: 'unresolved',
     title: 'Cracked basement floor near support column',
     body: 'Location: Residential basement/garage\nAddress: University Park area\nVisited: 3 days ago\n\nLarge branching crack in painted concrete floor. Support pole at junction. Possible settling issue. PVC plumbing and storage nearby.',
     likes: 67,
@@ -57,6 +60,7 @@ export const otherPosts = [
     tagsMore: 2,
     time: '1 hour ago',
     sortOrder: 1,
+    resolutionStatus: 'unresolved',
     title: 'Exterior foundation crack at Riverside Plaza',
     body: 'Location: Riverside Plaza (North entrance, by the loading zone)\nAddress: 214 W Pine St\nVisited: Today around 11:30 AM\n\nThere\'s a visible separation where the wall meets the slab, and the crack line looks like it\'s spreading along the corner. Pieces of material are flaking off around it.',
     likes: 292,
@@ -74,6 +78,7 @@ export const otherPosts = [
     tagsMore: 0,
     time: '4 hours ago',
     sortOrder: 4,
+    resolutionStatus: 'resolved',
     title: 'Cracked window at Cityline Bus Terminal',
     body: 'Location: Cityline Bus Terminal (Gate 4 waiting area)\nVisited: Today around 8:00 AM\n\nA window pane has a spiderweb crack starting near the corner. It\'s not taped off and people are leaning bags against it.\n\nFlagging this as a safety issue—seems like it could shatter further with vibration or impact.',
     likes: 84,
@@ -88,6 +93,7 @@ export const otherPosts = [
     tagsMore: 0,
     time: 'Yesterday',
     sortOrder: 24,
+    resolutionStatus: 'unresolved',
     title: 'Water damage in parking garage stairwell',
     body: 'Location: Metro Center Garage (Stairwell B, Level P2)\nVisited: Yesterday around 6:30 PM\n\nThe lower wall has dark damp patches and the stairwell smells musty. No standing water, but it feels humid and looks like repeated moisture exposure.',
     likes: 137,
@@ -123,6 +129,11 @@ export const initialCommentsByPost = {
     { id: 'c7', author: 'Maya Chen', text: 'Same smell in stairwell C. Could be a bigger drainage issue.', time: '3h' },
     { id: 'c8', author: 'Dev Patel', text: 'They really need to inspect the whole garage.', time: '5h' },
   ],
+}
+
+/** @param {{ resolutionStatus?: string }} post */
+export function getResolutionStatus(post) {
+  return post?.resolutionStatus === 'resolved' ? 'resolved' : 'unresolved'
 }
 
 // Helper: get image source for RN Image (handles require result, {uri}, {url})
