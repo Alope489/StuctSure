@@ -188,6 +188,16 @@ export default function SearchMainScreen() {
   }
 
   const handleBuildingBack = () => {
+    if (returnTarget?.kind === 'homeFeed') {
+      navigation.navigate('Home', {
+        screen: 'Home',
+        params: { focusPostId: returnTarget.initialPostId },
+      })
+      setReturnTarget(null)
+      setView('map')
+      setSelectedBuilding(null)
+      return
+    }
     if (returnTarget?.kind === 'searchPosts') {
       navigation.navigate('SearchPosts', {
         buildingId: returnTarget.buildingId,
@@ -229,6 +239,8 @@ export default function SearchMainScreen() {
           rt?.kind === 'searchPosts' && rt.buildingId && (rt.postTab === 'resolved' || rt.postTab === 'unresolved')
             ? rt
             : rt?.kind === 'profilePosts' && rt.profileUsername
+              ? rt
+              : rt?.kind === 'homeFeed'
               ? rt
               : null
         )

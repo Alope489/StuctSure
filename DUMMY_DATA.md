@@ -6,152 +6,182 @@ This document describes all placeholder/dummy data used in the StructSure app fo
 
 ## 0. Post Node Schema (Dummy)
 
-All posts (feed + user-created) follow this structure. Used on **Home**, **Profile**, and **Search**.
+All posts (feed + user-created) follow this structure. Used on **Expo Home**, **Expo Profile**, **Expo Search**, and the **web Home** mock feed.
 
 ### Location
-- **Expo:** `ExpoApp/data/posts.js`, `ExpoApp/context/AppContext.js`
+- **Expo seed data & helpers:** `ExpoApp/data/posts.js`
+- **Expo state & mutations:** `ExpoApp/context/AppContext.js`
+- **Web mock feed:** `Project/src/pages/Home.jsx` (`demoPosts` array)
 
-### Schema
+### Schema (Expo posts)
 
-| Field     | Type   | Required | Description                                      |
-|-----------|--------|----------|--------------------------------------------------|
-| `id`      | string | ✓        | Unique ID (e.g. `jd1`, `4`, `new-1711200000000`) |
-| `author`  | string | ✓        | Username (e.g. `johndoe`, `Mia Chen`)            |
-| `time`    | string | ✓        | Human-readable timestamp (`1 hour ago`, `Just now`) |
-| `sortOrder` | number |          | Hours ago for chronological sort (lower = newer) |
-| `title`   | string | ✓        | Post headline                                   |
-| `body`    | string | ✓        | Full description (location, address, details)    |
-| `tags`    | array  |          | Category tags (`structural`, `plumbing`, etc.)   |
-| `tagsMore`| number |          | Count of additional tags not shown               |
-| `likes`   | number | ✓        | Upvote count                                    |
-| `comments`| number | ✓        | Base comment count (before user adds)            |
-| `images`  | array  | ✓        | `require()` for local, `{ uri }` for remote      |
+| Field             | Type    | Required | Description                                                                 |
+|-------------------|---------|----------|-----------------------------------------------------------------------------|
+| `id`              | string  | ✓        | Unique ID (e.g. `jd1`, `4`, `new-1711200000000`)                           |
+| `author`          | string  | ✓        | Username (e.g. `johndoe`, `Mia Chen`)                                      |
+| `time`            | string  | ✓        | Human-readable timestamp (`1 hour ago`, `Yesterday`, `Just now`)           |
+| `sortOrder`       | number  |          | Approximate hours ago for chronological sort (lower = newer)               |
+| `title`           | string  | ✓        | Post headline                                                              |
+| `body`            | string  | ✓        | Full description (location, address, details)                              |
+| `tags`            | array   |          | Category labels (e.g. `['structural', 'plumbing']`)                        |
+| `tagsMore`        | number  |          | Count of “extra” categories, expanded via `getPostCategoryTags` helper     |
+| `likes`           | number  | ✓        | Upvote count                                                               |
+| `comments`        | number  | ✓        | Base comment count (before user adds comments in-session)                  |
+| `images`          | array   | ✓        | RN images (`require('../assets/...')`, `{ uri }`, or `{ url }`)           |
+| `buildingId`      | string  |          | ID of linked building (`initialBuildings` or OSM-derived building)        |
+| `buildingName`    | string  |          | Resolved building name (for new posts from OSM search)                     |
+| `buildingAddress` | string  |          | Resolved building address line from OSM                                    |
+| `resolutionStatus`| string  |          | `'resolved'` or `'unresolved'` (see `getResolutionStatus`)                 |
+| `severity`        | number  |          | 1–10 score, used by severity chips and `getSeverityChipColors`             |
+| `latitude`        | number  |          | Lat from GPS / OSM when user links a building                              |
+| `longitude`       | number  |          | Lon from GPS / OSM when user links a building                              |
 
-### User-Created Post (Create Post flow)
+Helper functions in `ExpoApp/data/posts.js`:
 
-When the user creates a post from the New Post screen:
+- `getPostCategoryTags(post)` — expands `tags` + `tagsMore` into a full category list for chips.
+- `getPostSeverityTag(post)` — maps numeric `severity` to a label like `"severity 6/10"`.
+- `getSeverityChipColors(severity)` — maps severity 1–10 to a gradient from green to red with readable text colors.
+- `getResolutionStatus(post)` — normalizes missing/unknown status to `'unresolved'`.
+- `getImageSource(img)` — converts mixed image representations into a usable React Native `Image` source.
 
-| Field   | Source                                                         |
-|---------|-----------------------------------------------------------------|
-| `id`    | `new-${Date.now()}`                                            |
-| `author`| Current user (`johndoe`)                                       |
-| `time`  | `"Just now"`                                                   |
-| `sortOrder` | `0` (newest)                                               |
-| `title` | First 60 chars of caption or `"New damage report"`              |
-| `body`  | Full caption + GPS coords if captured                           |
-| `tags`  | Selected categories from form                                   |
-| `tagsMore` | `0`                                                         |
-| `likes` | `0`                                                            |
-| `comments` | `0`                                                          |
-| `images`| `[{ uri: capturedPhotoUri }]` (local file)                      |
+### User-Created Post (Expo New Post flow)
 
-New posts appear on **Home** (all posts) and **Profile** (John Doe's posts only). Data is stored in `AppContext` state (temporary until app refresh; no persistence).
+When the user creates a post from the **New Post** screen in the Expo app:
+
+| Field             | Source                                                                 |
+|-------------------|------------------------------------------------------------------------|
+| `id`              | ``new-${Date.now()}``                                                  |
+| `author`          | `user?.username || 'johndoe'` (from context)                           |
+| `time`            | `'Just now'`                                                           |
+| `sortOrder`       | `0` (guaranteed newest)                                                |
+| `title`           | `postTitle.trim()` (required title input)                              |
+| `body`            | `caption.trim() || 'No description provided.'`                         |
+| `tags`            | Selected category labels from `categories` in `NewPostScreen`         |
+| `tagsMore`        | `0`                                                                    |
+| `likes`           | `0`                                                                    |
+| `comments`        | `0`                                                                    |
+| `images`          | `capturedPhoto ? [{ uri: capturedPhoto }] : []`                        |
+| `buildingId`      | `linkedBuilding.id` (from OSM nearby search)                          |
+| `buildingName`    | `linkedBuilding.name`                                                 |
+| `buildingAddress` | `linkedBuilding.addressLine`                                          |
+| `latitude`        | `linkedBuilding.lat`                                                  |
+| `longitude`       | `linkedBuilding.lon`                                                  |
+| `resolutionStatus`| User-selected `'resolved'` / `'unresolved'`                            |
+| `severity`        | `Math.round(severity)` from 1–10 slider                               |
+
+New posts are kept in `AppContext` state only (no persistence); they appear on the Expo **Home** feed and in the current user’s profile view.
 
 ---
 
-## 1. Demo Posts (`demoPosts`)
+## 1. Demo Posts (`demoPosts`, `johndoePosts`, `otherPosts`, `allPosts`)
 
-Used on the **Home feed** (web and mobile).
+Seed/demo posts are used in both the web app and Expo app.
 
-### Location
-- **Web:** `Project/src/pages/Home.jsx`
-- **Expo:** `ExpoApp/screens/HomeScreen.js`
+### Locations
+- **Web:** `Project/src/pages/Home.jsx` — `demoPosts` constant (5 posts).
+- **Expo data:** `ExpoApp/data/posts.js` — `johndoePosts`, `otherPosts`, `allPosts`.
 
-### Schema
+### Web schema (`demoPosts`)
 
-| Field   | Type     | Description                          |
-|---------|----------|--------------------------------------|
-| `id`    | string   | Unique ID (e.g. `p1`, `1`)            |
-| `author`| string   | Display name of the post author       |
-| `time`  | string   | Human-readable timestamp             |
-| `title` | string   | Post headline                        |
-| `body`  | string   | Full post text (web only)            |
-| `likes` | number   | Like count                           |
-| `comments` | number | Comment count                        |
-| `images`| array    | `{ url, alt? }` — Unsplash URLs      |
+| Field    | Type   | Description                                         |
+|----------|--------|-----------------------------------------------------|
+| `id`     | string | Unique ID (e.g. `p1`)                               |
+| `author` | string | Display name of the post author                     |
+| `time`   | string | Human-readable timestamp                            |
+| `title`  | string | Post headline                                       |
+| `body`   | string | Full post text                                      |
+| `likes`  | number | Like count                                          |
+| `comments` | number | Comment count                                     |
+| `images` | array  | `{ url, alt }` objects pointing to Unsplash URLs   |
 
-### Web (5 posts)
+The 5 demo posts correspond to:
 
-| ID  | Author       | Title                                           |
-|-----|--------------|--------------------------------------------------|
-| p1  | Mia Chen     | Exterior foundation crack at Riverside Plaza     |
-| p2  | Jordan Rivera| Cracked window at Cityline Bus Terminal          |
-| p3  | Ayesha Patel | Water damage/mold smell in parking garage stairwell |
-| p4  | Noah Williams| Cracked concrete walkway outside Greenway Market |
-| p5  | Jordan Rivera| Ceiling damage above table area at Brew & Bean Café |
+- `p1` — Exterior foundation crack at Riverside Plaza (Mia Chen).
+- `p2` — Cracked window at Cityline Bus Terminal (Jordan Rivera).
+- `p3` — Water damage/mold smell in parking garage stairwell (Ayesha Patel).
+- `p4` — Cracked concrete walkway outside Greenway Market (Noah Williams).
+- `p5` — Ceiling damage above table area at Brew & Bean Café (Jordan Rivera).
 
-### Expo (3 posts)
+### Expo schema (`johndoePosts`, `otherPosts`)
 
-| ID | Author       | Title                                           |
-|----|--------------|--------------------------------------------------|
-| 1  | Mia Chen     | Exterior foundation crack at Riverside Plaza     |
-| 2  | Jordan Rivera| Cracked window at Cityline Bus Terminal          |
-| 3  | Ayesha Patel | Water damage in parking garage stairwell        |
+Expo posts extend the base schema from section **0** and split into:
+
+- `johndoePosts` — 3 posts authored by `johndoe` with local images via `require('../assets/johndoe-damageX.png')`.
+- `otherPosts` — 3 posts authored by other users (`Mia Chen`, `Jordan Rivera`, `Ayesha Patel`) with remote Unsplash images (`{ uri }`).
+
+`allPosts` is a sorted array:
+
+```js
+export const allPosts = [...johndoePosts, ...otherPosts].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
+```
 
 ---
 
 ## 2. Demo Notifications (`demoNotifications`)
 
-Used on the **Notifications** screen (web and mobile).
+Used on the **Notifications** screen in both the web app and the Expo app.
 
-### Location
-- **Web:** `Project/src/pages/Notifications.jsx`
-- **Expo:** `ExpoApp/screens/NotificationsScreen.js`
+### Locations
+- **Web:** `Project/src/pages/Notifications.jsx` — `demoNotifications` constant.
+- **Expo:** `ExpoApp/screens/NotificationsScreen.js` — `demoNotifications` constant.
 
 ### Schema
 
 | Field    | Type    | Description                                    |
 |----------|---------|------------------------------------------------|
-| `id`     | string  | Unique ID (e.g. `n1`)                         |
+| `id`     | string  | Unique ID (e.g. `n1`)                          |
 | `name`   | string  | User who triggered the notification            |
 | `message`| string  | Action or message text                         |
 | `time`   | string  | Relative timestamp (e.g. `24m`, `2h`, `2d`)    |
-| `unread` | boolean | Whether to show the green unread indicator    |
+| `unread` | boolean | Whether to show the green unread indicator     |
 
-### Items (8 notifications, same on web and Expo)
+The same 8 notifications are shared across web and Expo, e.g.:
 
-| ID  | Name             | Message                        | Time  | Unread |
-|-----|------------------|--------------------------------|-------|--------|
-| n1  | Jane Cooper      | OMG! 😱 ...                    | 24m   | ✓      |
-| n2  | Jenny Wilson     | Upvoted your post              | 2h    | ✓      |
-| n3  | Esther Howard    | Upvoted your post              | 8h    | —      |
-| n4  | Leslie Alexander | Upvoted your post              | 2h ago| —      |
-| n5  | Savannah Nguyen  | Upvoted your post              | 2d    | —      |
-| n6  | Darlene Robertson| I walked by just the other... | 2d    | —      |
-| n7  | Marvin McKinney  | Upvoted your post              | 2w    | —      |
-| n8  | Kathryn Murphy   | They need to fix it soon!...   | 2w    | —      |
+- `n1` — Jane Cooper — `OMG! 😱 ...` — `24m` — `unread: true`
+- `n2` — Jenny Wilson — `Upvoted your post` — `2h` — `unread: true`
+- …
 
 ---
 
-## 3. Default User (`DEFAULT_USER`)
+## 3. Default User (`DEFAULT_USER`, `user` in AppContext)
 
-Used for the **profile** avatar and settings (Home screen).
+Used for the **profile avatar and settings** on the web Home screen, and as the current user in the Expo app.
 
-### Location
-- **Web:** `Project/src/pages/Home.jsx` — `{ photo: null, username: 'johndoe', email: 'user@domain.com' }`
-- **Expo:** `ExpoApp/screens/HomeScreen.js` — same structure
-- **Expo Notifications:** `ExpoApp/screens/NotificationsScreen.js` — `{ photo: null }` (profile avatar only)
+### Locations
+- **Web:** `Project/src/pages/Home.jsx` — `const DEFAULT_USER = { photo: null, username: 'johndoe', email: 'user@domain.com' }`.
+- **Web Notifications:** `Project/src/pages/Notifications.jsx` — `const DEFAULT_USER = { photo: null }` for the avatar only.
+- **Expo:** `ExpoApp/context/AppContext.js` — `user` state with at least `username`, `email`, and optional `photo`.
 
 ### Schema
 
-| Field    | Type   | Description                |
-|----------|--------|----------------------------|
-| `photo`  | string \| null | Profile image URL/data URI |
-| `username` | string | Display name              |
-| `email`  | string | User email                 |
+| Field     | Type           | Description                            |
+|-----------|----------------|----------------------------------------|
+| `photo`   | string \| null | Profile image URL/data URI             |
+| `username`| string         | Display name                           |
+| `email`   | string         | User email                             |
+
+In Expo, `user.photo` is `null` by default and is rendered as a static avatar image (`johndoe.png`) until the user changes it.
 
 ---
 
 ## 4. New Post Categories (`categories`)
 
-Used in the **New Post** screen for damage categories.
+Used in the **New Post** screens to tag the type of issue.
 
-### Location
-- **Web:** `Project/src/pages/NewPost.jsx`
+### Locations
+- **Web:** `Project/src/pages/NewPost.jsx` (see inline `categories` definition).
+- **Expo:** `ExpoApp/screens/NewPostScreen.js` — `const categories = [...]`.
 
-### Items
+### Items (Expo)
 
-`structural`, `electrical`, `plumbing`, `hvac`, `roofing`, `fire & life safety`, `ADA / code compliance`, `environmental/health`, `drainage & site conditions`, `maintenance / wear`
+Each category has an `id` and a human-readable `label`:
+
+- `structural`, `electrical`, `plumbing`, `HVAC`, `roofing`,
+- `fire & life safety`, `ADA / code compliance`,
+- `environmental/health`, `drainage & site conditions`,
+- `maintenance / wear`.
+
+The Expo `addPost` call maps selected `id`s back to labels for storage on the post object.
 
 ---
 

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useScrollToTop } from '@react-navigation/native'
 import { useApp } from '../context/AppContext'
 import { useThemedDialog } from '../context/ThemedDialogContext'
 import { PostCard } from '../components/PostCard'
@@ -10,6 +11,8 @@ import { AccountSidePanel } from '../components/AccountSidePanel'
 export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets()
   const showThemedDialog = useThemedDialog()
+  const scrollRef = useRef(null)
+  useScrollToTop(scrollRef)
   const {
     posts,
     buildings,
@@ -107,7 +110,7 @@ export default function HomeScreen({ navigation }) {
           <Image source={user?.photo ? { uri: user.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
         </TouchableOpacity>
       </View>
-      <ScrollView style={styles.feed} contentContainerStyle={styles.feedContent}>
+      <ScrollView ref={scrollRef} style={styles.feed} contentContainerStyle={styles.feedContent}>
         {posts.map((p) => (
           <PostCard
             key={p.id}
@@ -125,7 +128,13 @@ export default function HomeScreen({ navigation }) {
                 ? () =>
                     navigation.navigate('Search', {
                       screen: 'SearchMain',
-                      params: { openBuildingId: p.buildingId },
+                      params: {
+                        openBuildingId: p.buildingId,
+                        returnTarget: {
+                          kind: 'homeFeed',
+                          initialPostId: p.id,
+                        },
+                      },
                     })
                 : undefined
             }

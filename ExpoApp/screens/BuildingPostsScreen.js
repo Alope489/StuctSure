@@ -176,7 +176,15 @@ export default function BuildingPostsScreen() {
                 ? () =>
                     navigation.navigate('Search', {
                       screen: 'SearchMain',
-                      params: { openBuildingId: p.buildingId },
+                      params: {
+                        openBuildingId: p.buildingId,
+                        returnTarget: {
+                          kind: 'searchPosts',
+                          buildingId,
+                          postTab,
+                          initialPostId: p.id,
+                        },
+                      },
                     })
                 : undefined
             }

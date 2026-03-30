@@ -15,7 +15,7 @@ const RESOLUTION_ORANGE_BG = '#ea580c'
 const RESOLUTION_ORANGE_TEXT = '#1a0a00'
 const RESOLUTION_GREEN_BG = '#00ff7f'
 const RESOLUTION_GREEN_TEXT = '#061014'
-const CAPTION_PREVIEW_CHARS = 200
+const CAPTION_PREVIEW_CHARS = 120
 
 /**
  * @param {object} props
