@@ -127,7 +127,6 @@ export default function NewPostScreen() {
       buildingId: linkedBuilding.id,
       buildingName: linkedBuilding.name,
       buildingAddress: linkedBuilding.addressLine,
-      buildingImageUrl: linkedBuilding.photoUrl || undefined,
       latitude: linkedBuilding.lat,
       longitude: linkedBuilding.lon,
       resolutionStatus,

@@ -32,26 +32,13 @@ Each item returned to the UI:
 | `addressLine`  | From `addr:*` tags when present                  |
 | `lat`, `lon`   | Center point (`out center` for ways)           |
 | `rawType`      | `amenity` or `building` tag for subtitle         |
-| `photoUrl`     | Public image URL for the building profile (may be empty) |
 
-## Building profile photos (OSM / Wikimedia / Wikidata)
-
-[`ExpoApp/services/buildingPhotoUrl.js`](../ExpoApp/services/buildingPhotoUrl.js) resolves **`photoUrl`** for each nearby option:
-
-1. **OSM `image=*`** — if the value is an `http(s)` URL, it is used as-is.
-2. **OSM `wikimedia_commons=*`** — `File:…` is turned into a Wikimedia Commons **`Special:FilePath`** URL (spaces normalized to `_`). Values starting with **`Category:`** are skipped (not a single image).
-3. **OSM `wikidata=*`** — first **`Q` id** is parsed; if there is still no `photoUrl`, the app calls Wikidata **`wbgetentities`** in batches (up to 50 ids per request) and reads claim **`P18` (image)** → same Commons **`Special:FilePath`** URL.
-
-Requests to `wikidata.org` use a descriptive **`User-Agent`** (`WIKIMEDIA_USER_AGENT` in the module), as required by Wikimedia. Failures or missing P18 leave **`photoUrl` empty**; **`building.image`** is then empty and **Search** shows a **building icon** inside the circular profile slot.
-
-**Attribution:** Commons files are under various free licenses; in-app display is normal use. If you copy or republish images elsewhere, follow each file’s license on Commons.
-
-**Limits:** Many small POIs have no `image` / `wikimedia_commons` / P18 — expect empty `photoUrl` often. `Special:FilePath` redirects to `upload.wikimedia.org`; React Native `Image` usually follows redirects.
+Building profile photos are **not** loaded from OSM or Wikimedia; see [`building-photo-url.md`](./building-photo-url.md).
 
 ## Linking to app state
 
-- User-selected row → post fields: `buildingId` (= `id`), optional `buildingName`, `buildingAddress`, optional **`buildingImageUrl`** (from `photoUrl`), `latitude`, `longitude`.
-- **`AppContext`** upserts a **building** record when `buildingId` is not already known (demo seeds use `b1`, `b2`, …; OSM picks use `osm-way-…` etc.) and sets **`building.image`** to **`buildingImageUrl`** or **`PLACEHOLDER_BUILDING_IMAGE`** (empty string → icon avatar in Search).
+- User-selected row → post fields: `buildingId` (= `id`), `buildingName`, `buildingAddress`, `latitude`, `longitude`.
+- **`AppContext`** upserts a **building** record when `buildingId` is not already known (demo seeds use `b1`, `b2`, …; OSM picks use `osm-way-…` etc.) and sets **`building.image`** to **`PLACEHOLDER_BUILDING_IMAGE`** (empty → icon avatar in Search).
 
 ## Fair use
 
@@ -59,6 +46,6 @@ Overpass is shared infrastructure. Do **not** hammer the API: fetch **once** aft
 
 ## Seed buildings and post linkage
 
-- [`ExpoApp/data/buildings.js`](../ExpoApp/data/buildings.js) exports `initialBuildings` (demo profiles) and `PLACEHOLDER_BUILDING_IMAGE` (empty: no URL, **Search** uses a circular **building** icon). Demo **`b1` / `b2`** use **Commons `Special:FilePath`** URLs for real FIU-area photos; **`b3` / `b4`** use neutral stock URLs for fictional addresses.
+- [`ExpoApp/data/buildings.js`](../ExpoApp/data/buildings.js) exports `initialBuildings` (demo profiles) and `PLACEHOLDER_BUILDING_IMAGE`. Demo buildings use the placeholder image so Search shows the default building icon.
 - [`ExpoApp/data/posts.js`](../ExpoApp/data/posts.js) seed posts include `buildingId` (`b1`–`b4`) so Search building grids stay populated before any user-created posts.
 - **`AppContext`** initializes `buildings` from `initialBuildings` and appends a new row when `addPost` receives an unknown `buildingId` (typical for `osm-way-*` / `osm-node-*` ids from the picker).

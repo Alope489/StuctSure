@@ -1,21 +1,28 @@
-import { useState, useRef, useCallback } from 'react'
-import { Alert } from 'react-native'
-import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native'
+import { useState, useCallback } from 'react'
 import {
+  Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
   View,
   Text,
-  TextInput,
   StyleSheet,
   Image,
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  FlatList,
 } from 'react-native'
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 
 import { useApp } from '../context/AppContext'
 import { getImageSource, getResolutionStatus } from '../data/posts'
+import { PostCard } from '../components/PostCard'
+
+const BUILDING_POST_FEED_ITEM_LENGTH = 520
 
 function BuildingProfileCircle({ uri, size }) {
   const [loadFailed, setLoadFailed] = useState(false)
@@ -99,20 +106,15 @@ function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, building
   )
 }
 
-function BuildingDetailView({ building, posts, onBack, onPostSelect }) {
+function BuildingDetailView({ building, forBuilding, postTab, setPostTab, tabPosts, onBack, onPostSelect }) {
   const insets = useSafeAreaInsets()
   const { width } = Dimensions.get('window')
   const padding = 28
   const gap = 4
   const gridItemSize = (width - padding - gap * 2) / 3
-  const [postTab, setPostTab] = useState('unresolved')
-  const forBuilding = posts
-    .filter((p) => p.buildingId === building?.id)
-    .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
   const resolvedCount = forBuilding.filter((p) => getResolutionStatus(p) === 'resolved').length
   const unresolvedCount = forBuilding.filter((p) => getResolutionStatus(p) === 'unresolved').length
-  const postList = forBuilding.filter((p) => getResolutionStatus(p) === postTab)
-  const allImages = postList.flatMap((p) => (p?.images || []).map((img) => ({ post: p, img })))
+  const allImages = tabPosts.flatMap((p) => (p?.images || []).map((img) => ({ post: p, img })))
   const tagAggregate = forBuilding.reduce((sum, p) => sum + (p.tags?.length || 0) + (p.tagsMore || 0), 0)
 
   return (
@@ -186,148 +188,118 @@ function BuildingDetailView({ building, posts, onBack, onPostSelect }) {
   )
 }
 
-function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPostMenu, onOpenBuildingProfile, onAuthorProfile }) {
-  const insets = useSafeAreaInsets()
-  const [activeImageIndex, setActiveImageIndex] = useState(0)
-  const images = post?.images || []
-  const scrollRef = useRef(null)
-  const commentCount = getDisplayCommentCount ? getDisplayCommentCount(post?.id) : (post?.comments || 0)
-  const canOpenBuilding = !!(building || post?.buildingId)
-
+function BuildingPostsFeed({
+  insets,
+  tabPosts,
+  anchorPost,
+  buildings,
+  onBack,
+  navigation,
+  getDisplayCommentCount,
+  handlePostMenu,
+  upvotedPosts,
+  toggleUpvote,
+  setCommentsOpenForPostId,
+}) {
   return (
-    <ScrollView style={styles.postDetailScroll} contentContainerStyle={styles.postDetailContent}>
+    <View style={styles.postFeedScreen}>
       <View style={[styles.detailHeader, { paddingTop: 14 + insets.top }]}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Ionicons name="arrow-back" size={24} color="#e0e0e0" />
         </TouchableOpacity>
         <Text style={styles.detailTitle}>Search</Text>
       </View>
-
-      {canOpenBuilding ? (
-        <TouchableOpacity
-          style={styles.postDetailBuildingLink}
-          onPress={onOpenBuildingProfile}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="business-outline" size={16} color="#00ff7f" />
-          <Text style={styles.postDetailBuildingLinkText}>Building profile</Text>
-          <Ionicons name="chevron-forward" size={16} color="#666" />
-        </TouchableOpacity>
-      ) : null}
-
-      <View style={styles.postDetailAuthorRow}>
-        <TouchableOpacity
-          style={styles.postDetailAuthorHit}
-          onPress={() => onAuthorProfile?.(post?.author)}
-          activeOpacity={0.7}
-          disabled={!onAuthorProfile || !post?.author}
-        >
-          <View style={styles.postDetailAvatar}>
-            <Text style={styles.postDetailAvatarText}>{(post?.author || '?').slice(0, 1)}</Text>
-          </View>
-          <View style={styles.postDetailMeta}>
-            <Text style={styles.postDetailAuthor}>{post?.author}</Text>
-            <Text style={styles.postDetailTime}>{post?.time}</Text>
-          </View>
-        </TouchableOpacity>
-        {onPostMenu && (
-          <TouchableOpacity onPress={() => onPostMenu(post)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.postDetailMenuBtn}>
-            <Ionicons name="ellipsis-vertical" size={20} color="#888" />
-          </TouchableOpacity>
+      <FlatList
+        key={anchorPost?.id || 'feed'}
+        style={styles.postFeedList}
+        data={tabPosts}
+        keyExtractor={(item) => item.id}
+        initialScrollIndex={
+          tabPosts.length > 0 && anchorPost
+            ? Math.min(Math.max(0, tabPosts.findIndex((p) => p.id === anchorPost.id)), tabPosts.length - 1)
+            : 0
+        }
+        onScrollToIndexFailed={() => {}}
+        getItemLayout={(_, index) => ({
+          length: BUILDING_POST_FEED_ITEM_LENGTH,
+          offset: 8 + BUILDING_POST_FEED_ITEM_LENGTH * index,
+          index,
+        })}
+        contentContainerStyle={styles.postFeedContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item: p }) => (
+          <PostCard
+            post={p}
+            isUpvoted={upvotedPosts.has(p.id)}
+            onUpvote={toggleUpvote}
+            onComment={setCommentsOpenForPostId}
+            displayCommentCount={getDisplayCommentCount(p.id)}
+            onPostMenu={handlePostMenu}
+            onAuthorPress={() => p.author && navigation.navigate('Profile', { profileUsername: p.author })}
+            onBuildingPress={
+              p.buildingId ? () => navigation.navigate('Search', { openBuildingId: p.buildingId }) : undefined
+            }
+            buildingLabel={p.buildingName || buildings.find((b) => b.id === p.buildingId)?.name}
+          />
         )}
-      </View>
-
-      {post?.title ? <Text style={styles.postDetailPostTitle}>{post.title}</Text> : null}
-      {post?.body ? <Text style={styles.postDetailBody}>{post.body}</Text> : null}
-
-      {images.length > 0 && (
-        <View style={styles.postDetailImageWrap}>
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={(e) => {
-              const offset = e.nativeEvent.contentOffset.x
-              const w = Dimensions.get('window').width - 28
-              const idx = Math.round(offset / w)
-              if (idx >= 0 && idx < images.length) setActiveImageIndex(idx)
-            }}
-            scrollEventThrottle={100}
-          >
-            {images.map((img, idx) => (
-              <View key={idx} style={[styles.postDetailImageSlide, { width: Dimensions.get('window').width - 28 }]}>
-                <Image source={getImageSource(img)} style={styles.postDetailImage} resizeMode="cover" />
-              </View>
-            ))}
-          </ScrollView>
-          {images.length > 1 && (
-            <View style={styles.postDetailDots}>
-              {images.map((_, idx) => (
-                <View key={idx} style={[styles.postDetailDot, activeImageIndex === idx && styles.postDetailDotActive]} />
-              ))}
-            </View>
-          )}
-          <View style={styles.postDetailTags}>
-            <View
-              style={[
-                styles.tagChip,
-                getResolutionStatus(post) === 'resolved' ? styles.tagChipResolved : styles.tagChipUnresolved,
-              ]}
-            >
-              <Text style={styles.tagChipStatusText}>{getResolutionStatus(post)}</Text>
-            </View>
-            {(post?.tags || []).map((tag) => (
-              <View key={tag} style={styles.tagChip}>
-                <Text style={styles.tagChipText}>{tag}</Text>
-              </View>
-            ))}
-            {(post?.tagsMore || 0) > 0 && (
-              <View style={styles.tagChip}>
-                <Text style={styles.tagChipText}>+{post.tagsMore}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-      )}
-
-      <View style={styles.postDetailActions}>
-        <View style={styles.actionRow}>
-          <Ionicons name="arrow-up" size={20} color="#00ff7f" />
-          <Text style={[styles.actionText, styles.actionTextActive]}>{post?.likes || 0}</Text>
-        </View>
-        <View style={styles.actionRow}>
-          <Ionicons name="chatbubble-outline" size={18} color="#888" />
-          <Text style={styles.actionText}>{commentCount}</Text>
-        </View>
-      </View>
-
-      {(building?.address || post?.buildingAddress) ? (
-        <View style={styles.postDetailLocationBar}>
-          <Ionicons name="location-outline" size={14} color="#888" />
-          <Text style={styles.postDetailLocation}>{building?.address || post?.buildingAddress}</Text>
-        </View>
-      ) : null}
-    </ScrollView>
+      />
+    </View>
   )
 }
 
 export default function SearchScreen() {
   const route = useRoute()
   const navigation = useNavigation()
-  const { posts, buildings, user, deletePost, getDisplayCommentCount, updatePostResolution } = useApp()
+  const insets = useSafeAreaInsets()
+  const {
+    posts,
+    buildings,
+    user,
+    deletePost,
+    getDisplayCommentCount,
+    updatePostResolution,
+    addComment,
+    commentsByPost,
+    upvotedPosts,
+    toggleUpvote,
+  } = useApp()
 
   const [view, setView] = useState('map') // 'map' | 'building' | 'post'
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedBuilding, setSelectedBuilding] = useState(null)
   const [selectedPost, setSelectedPost] = useState(null)
+  const [postTab, setPostTab] = useState('unresolved')
+  const [commentsOpenForPostId, setCommentsOpenForPostId] = useState(null)
+  const [commentInput, setCommentInput] = useState('')
+
+  const forBuilding =
+    selectedBuilding != null
+      ? posts
+          .filter((p) => p.buildingId === selectedBuilding.id)
+          .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
+      : []
+  const tabPosts = forBuilding.filter((p) => getResolutionStatus(p) === postTab)
 
   const goBack = () => {
-    if (view === 'post') setView('building')
-    else if (view === 'building') {
+    if (view === 'post') {
+      setView('building')
+      setSelectedPost(null)
+    } else if (view === 'building') {
       setView('map')
       setSelectedBuilding(null)
     }
+  }
+
+  const closeComments = () => {
+    setCommentsOpenForPostId(null)
+    setCommentInput('')
+  }
+
+  const handleAddComment = () => {
+    if (!commentsOpenForPostId || !commentInput.trim()) return
+    addComment(commentsOpenForPostId, { text: commentInput.trim(), time: 'Just now' })
+    setCommentInput('')
   }
 
   const handlePostMenu = (post) => {
@@ -378,6 +350,7 @@ export default function SearchScreen() {
         setSelectedBuilding(b)
         setView('building')
         setSelectedPost(null)
+        setPostTab('unresolved')
       }
       navigation.setParams({ openBuildingId: undefined })
       return undefined
@@ -386,6 +359,7 @@ export default function SearchScreen() {
 
   const handleBuildingSelect = (building) => {
     setSelectedBuilding(building)
+    setPostTab('unresolved')
     setView('building')
     setSearchQuery('')
   }
@@ -399,7 +373,10 @@ export default function SearchScreen() {
     return (
       <BuildingDetailView
         building={selectedBuilding}
-        posts={posts}
+        forBuilding={forBuilding}
+        postTab={postTab}
+        setPostTab={setPostTab}
+        tabPosts={tabPosts}
         onBack={goBack}
         onPostSelect={handlePostSelect}
       />
@@ -407,30 +384,85 @@ export default function SearchScreen() {
   }
 
   if (view === 'post' && selectedPost) {
-    const buildingForPost =
-      selectedBuilding?.id === selectedPost.buildingId
-        ? selectedBuilding
-        : buildings.find((b) => b.id === selectedPost.buildingId)
     return (
-      <PostDetailView
-        post={selectedPost}
-        building={buildingForPost}
-        onBack={goBack}
-        getDisplayCommentCount={getDisplayCommentCount}
-        onPostMenu={handlePostMenu}
-        onAuthorProfile={(author) => author && navigation.navigate('Profile', { profileUsername: author })}
-        onOpenBuildingProfile={() => {
-          const b =
-            selectedBuilding?.id === selectedPost.buildingId
-              ? selectedBuilding
-              : buildings.find((x) => x.id === selectedPost.buildingId)
-          if (b) {
-            setSelectedBuilding(b)
-            setView('building')
-            setSelectedPost(null)
-          }
-        }}
-      />
+      <View style={styles.searchStack}>
+        <BuildingPostsFeed
+          insets={insets}
+          tabPosts={tabPosts}
+          anchorPost={selectedPost}
+          buildings={buildings}
+          onBack={goBack}
+          navigation={navigation}
+          getDisplayCommentCount={getDisplayCommentCount}
+          handlePostMenu={handlePostMenu}
+          upvotedPosts={upvotedPosts}
+          toggleUpvote={toggleUpvote}
+          setCommentsOpenForPostId={setCommentsOpenForPostId}
+        />
+        <Modal visible={!!commentsOpenForPostId} transparent animationType="slide">
+          <View style={styles.commentModalOverlay}>
+            <TouchableOpacity style={styles.commentModalBackdrop} activeOpacity={1} onPress={closeComments} />
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
+              <View style={[styles.commentModalPanel, { paddingBottom: insets.bottom + 80 }]}>
+                <View style={styles.commentModalHandle} />
+                <View style={styles.commentModalHeader}>
+                  <Text style={styles.commentModalTitle}>Comments</Text>
+                  <TouchableOpacity onPress={closeComments} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                    <Ionicons name="close" size={28} color="#e0e0e0" />
+                  </TouchableOpacity>
+                </View>
+                {commentsOpenForPostId && (
+                  <>
+                    <View style={styles.commentModalPostPreview}>
+                      <Text style={styles.commentModalPostAuthor}>
+                        {(posts.find((p) => p.id === commentsOpenForPostId) || {}).author}
+                      </Text>
+                      <Text style={styles.commentModalPostTitle} numberOfLines={2}>
+                        {(posts.find((p) => p.id === commentsOpenForPostId) || {}).title}
+                      </Text>
+                    </View>
+                    <ScrollView
+                      style={styles.commentList}
+                      contentContainerStyle={styles.commentListContent}
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={false}
+                    >
+                      {(commentsByPost[commentsOpenForPostId] || []).map((c) => (
+                        <View key={c.id} style={styles.commentItem}>
+                          <Text style={styles.commentAuthor}>{c.author}</Text>
+                          <Text style={styles.commentText}>{c.text}</Text>
+                          <Text style={styles.commentTime}>{c.time}</Text>
+                        </View>
+                      ))}
+                    </ScrollView>
+                    <View style={styles.commentInputRow}>
+                      <TextInput
+                        style={styles.commentInput}
+                        placeholder="Add a comment..."
+                        placeholderTextColor="#666"
+                        value={commentInput}
+                        onChangeText={setCommentInput}
+                        multiline
+                        maxLength={500}
+                      />
+                      <TouchableOpacity
+                        style={[styles.commentPostBtn, !commentInput.trim() && styles.commentPostBtnDisabled]}
+                        onPress={handleAddComment}
+                        disabled={!commentInput.trim()}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.commentPostText, !commentInput.trim() && styles.commentPostTextDisabled]}>
+                          Post
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </Modal>
+      </View>
     )
   }
 
@@ -561,87 +593,67 @@ const styles = StyleSheet.create({
   photoGridItem: { borderRadius: 8, overflow: 'hidden' },
   photoGridImg: { width: '100%', height: '100%', borderRadius: 8 },
 
-  postDetailScroll: { flex: 1, backgroundColor: '#0d0d0d' },
-  postDetailContent: { paddingBottom: 40 },
-  postDetailBuildingLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 16,
+  searchStack: { flex: 1, backgroundColor: '#0d0d0d' },
+  postFeedScreen: { flex: 1, backgroundColor: '#0d0d0d' },
+  postFeedList: { flex: 1 },
+  postFeedContent: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 24 },
+
+  commentModalOverlay: { flex: 1, justifyContent: 'flex-end' },
+  commentModalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
+  commentModalPanel: {
+    backgroundColor: '#0d0d0d',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '85%',
+    paddingHorizontal: 16,
+  },
+  commentModalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignSelf: 'center',
+    marginTop: 12,
     marginBottom: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,255,127,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,255,127,0.2)',
   },
-  postDetailBuildingLinkText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#00ff7f' },
-  postDetailBody: {
-    fontSize: 15,
-    color: 'rgba(224,224,224,0.95)',
-    lineHeight: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  postDetailTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginBottom: 16 },
-  tagChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(0,255,127,0.4)',
-    backgroundColor: 'rgba(0,255,127,0.1)',
-  },
-  tagChipResolved: { borderColor: 'rgba(0,255,127,0.35)', backgroundColor: 'rgba(0,255,127,0.12)' },
-  tagChipUnresolved: { borderColor: 'rgba(255,193,7,0.45)', backgroundColor: 'rgba(255,193,7,0.1)' },
-  tagChipText: { fontSize: 12, color: '#00ff7f' },
-  tagChipStatusText: { fontSize: 12, color: '#c8e6c9', textTransform: 'capitalize' },
-  postDetailImageWrap: { marginBottom: 12 },
-  postDetailImageSlide: { aspectRatio: 1 },
-  postDetailImage: { width: '100%', height: '100%', borderRadius: 0 },
-  postDetailDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingVertical: 10 },
-  postDetailDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' },
-  postDetailDotActive: { backgroundColor: '#00ff7f', width: 8, height: 8, borderRadius: 4 },
-  postDetailActions: { flexDirection: 'row', gap: 24, paddingHorizontal: 16, paddingVertical: 12 },
-  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  actionText: { color: '#888', fontSize: 14 },
-  actionTextActive: { color: '#00ff7f' },
-  postDetailAuthorRow: {
+  commentModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
     paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
-  postDetailAuthorHit: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  postDetailMenuBtn: { padding: 4 },
-  postDetailPostTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#e0e0e0',
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  postDetailAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,255,127,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  postDetailAvatarText: { color: '#e0e0e0', fontWeight: '700', fontSize: 14 },
-  postDetailMeta: { flex: 1 },
-  postDetailAuthor: { fontSize: 14, fontWeight: '600', color: '#e0e0e0' },
-  postDetailTime: { fontSize: 12, color: '#888' },
-  postDetailLocationBar: {
+  commentModalTitle: { fontSize: 18, fontWeight: '600', color: '#e0e0e0' },
+  commentModalPostPreview: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  commentModalPostAuthor: { fontSize: 14, fontWeight: '600', color: '#00ff7f', marginBottom: 4 },
+  commentModalPostTitle: { fontSize: 13, color: 'rgba(224,224,224,0.8)' },
+  commentList: { maxHeight: 280 },
+  commentListContent: { paddingVertical: 12, paddingBottom: 20 },
+  commentItem: { marginBottom: 16 },
+  commentAuthor: { fontSize: 14, fontWeight: '600', color: '#e0e0e0', marginBottom: 4 },
+  commentText: { fontSize: 14, color: 'rgba(224,224,224,0.9)', lineHeight: 20 },
+  commentTime: { fontSize: 12, color: '#666', marginTop: 4 },
+  commentInputRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    alignItems: 'flex-end',
+    gap: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.06)',
   },
-  postDetailLocation: { fontSize: 12, color: '#888' },
+  commentInput: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: '#e0e0e0',
+    fontSize: 15,
+    maxHeight: 100,
+  },
+  commentPostBtn: { paddingVertical: 12, paddingHorizontal: 16 },
+  commentPostBtnDisabled: { opacity: 0.5 },
+  commentPostText: { fontSize: 15, fontWeight: '600', color: '#00ff7f' },
+  commentPostTextDisabled: { color: '#666' },
 })
