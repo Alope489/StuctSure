@@ -22,7 +22,7 @@ export function AppProvider({ children }) {
           id: newPost.buildingId,
           name: newPost.buildingName || 'Building',
           address: newPost.buildingAddress || '',
-          image: PLACEHOLDER_BUILDING_IMAGE,
+          image: newPost.buildingImageUrl || PLACEHOLDER_BUILDING_IMAGE,
           tags: 0,
           history: 0,
         },

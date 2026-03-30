@@ -1,5 +1,7 @@
 /** Overpass API: nearby public / non-residential features (OSM). See docs/nearby-public-buildings.md */
 
+import { photoUrlFromOsmTags, enrichPhotoUrlsFromWikidata } from './buildingPhotoUrl'
+
 /** Prefer lz4/z before main api — same project, often less saturated; kumi is a common public mirror. */
 const OVERPASS_ENDPOINTS = [
   'https://lz4.overpass-api.de/api/interpreter',
@@ -146,7 +148,7 @@ async function fetchOverpassWithFallback(query, signal) {
  * @param {number} lat
  * @param {number} lon
  * @param {{ radiusM?: number, signal?: AbortSignal }} [opts]
- * @returns {Promise<Array<{ id: string, name: string, addressLine: string, lat: number, lon: number, rawType: string }>>}
+ * @returns {Promise<Array<{ id: string, name: string, addressLine: string, lat: number, lon: number, rawType: string, photoUrl: string }>>}
  */
 export async function fetchNearbyPublicBuildings(lat, lon, opts = {}) {
   const radiusM = opts.radiusM ?? DEFAULT_RADIUS_M
@@ -165,6 +167,7 @@ export async function fetchNearbyPublicBuildings(lat, lon, opts = {}) {
     const name = displayName(el.tags)
     const addr = addressLine(el.tags)
     const dist = haversineM(lat, lon, c.lat, c.lon)
+    const { photoUrl, wikidataId } = photoUrlFromOsmTags(el.tags)
     seen.set(key, {
       id: `osm-${el.type}-${el.id}`,
       name,
@@ -172,20 +175,28 @@ export async function fetchNearbyPublicBuildings(lat, lon, opts = {}) {
       lat: c.lat,
       lon: c.lon,
       rawType: rawTypeLabel(el.tags),
+      photoUrl,
+      wikidataId,
       _dist: dist,
     })
   }
-  return Array.from(seen.values())
+  const rows = Array.from(seen.values())
     .sort((a, b) => a._dist - b._dist)
     .slice(0, MAX_RESULTS)
-    .map((row) => ({
-      id: row.id,
-      name: row.name,
-      addressLine: row.addressLine,
-      lat: row.lat,
-      lon: row.lon,
-      rawType: row.rawType,
-    }))
+  try {
+    await enrichPhotoUrlsFromWikidata(rows, opts.signal)
+  } catch (err) {
+    if (err && err.name === 'AbortError') throw err
+  }
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    addressLine: row.addressLine,
+    lat: row.lat,
+    lon: row.lon,
+    rawType: row.rawType,
+    photoUrl: row.photoUrl || '',
+  }))
 }
 
 export { DEFAULT_RADIUS_M, MAX_RESULTS, OVERPASS_ENDPOINTS }

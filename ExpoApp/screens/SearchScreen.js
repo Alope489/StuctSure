@@ -8,7 +8,6 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
-  useWindowDimensions,
   Dimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -16,6 +15,26 @@ import { Ionicons } from '@expo/vector-icons'
 
 import { useApp } from '../context/AppContext'
 import { getImageSource } from '../data/posts'
+
+function BuildingProfileCircle({ uri, size }) {
+  const [loadFailed, setLoadFailed] = useState(false)
+  const dim = { width: size, height: size, borderRadius: size / 2 }
+  const showIcon = !uri?.trim() || loadFailed
+  if (showIcon) {
+    return (
+      <View style={[dim, styles.buildingProfileFallback]}>
+        <Ionicons name="business" size={Math.round(size * 0.46)} color="#00ff7f" />
+      </View>
+    )
+  }
+  return (
+    <Image
+      source={{ uri }}
+      style={[dim, styles.buildingProfilePhoto]}
+      onError={() => setLoadFailed(true)}
+    />
+  )
+}
 
 function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, buildings }) {
   const insets = useSafeAreaInsets()
@@ -54,7 +73,7 @@ function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, building
                 onPress={() => onBuildingSelect(b)}
                 activeOpacity={0.7}
               >
-                <Image source={{ uri: b.image }} style={styles.searchResultThumb} />
+                <BuildingProfileCircle uri={b.image} size={48} />
                 <View style={styles.searchResultText}>
                   <Text style={styles.searchResultName}>{b.name}</Text>
                   <Text style={styles.searchResultAddress}>{b.address}</Text>
@@ -101,7 +120,7 @@ function BuildingDetailView({ building, posts, onBack, onPostSelect }) {
       </View>
 
       <View style={styles.buildingHeader}>
-        <Image source={{ uri: building?.image }} style={styles.buildingImage} />
+        <BuildingProfileCircle uri={building?.image} size={100} />
         <View style={styles.buildingBadges}>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{tagAggregate} Tags</Text>
@@ -366,7 +385,13 @@ const styles = StyleSheet.create({
   },
   searchResultsScroll: { padding: 12 },
   searchResultItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
-  searchResultThumb: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.05)' },
+  buildingProfileFallback: {
+    backgroundColor: 'rgba(0,255,127,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  buildingProfilePhoto: { backgroundColor: 'rgba(255,255,255,0.06)' },
   searchResultText: { flex: 1 },
   searchResultName: { fontSize: 15, fontWeight: '600', color: '#e0e0e0', marginBottom: 2 },
   searchResultAddress: { fontSize: 12, color: '#888' },
@@ -385,7 +410,6 @@ const styles = StyleSheet.create({
   backBtn: { marginRight: 12 },
   detailTitle: { fontSize: 18, fontWeight: '600', color: '#e0e0e0' },
   buildingHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 16 },
-  buildingImage: { width: 100, height: 100, borderRadius: 50 },
   buildingBadges: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   badge: {
     paddingHorizontal: 14,

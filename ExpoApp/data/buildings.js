@@ -1,14 +1,17 @@
 /** Seed buildings for Search; posts link via buildingId. Dynamic OSM picks are merged in AppContext. */
 
-export const PLACEHOLDER_BUILDING_IMAGE =
-  'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=400&q=70'
+/** Empty = no remote photo; Search shows a building icon inside the circular profile slot. */
+export const PLACEHOLDER_BUILDING_IMAGE = ''
+
+/** Wikimedia Commons Special:FilePath (redirects to upload.wikimedia.org). b1/b2: real FIU-area Commons photos. b3/b4: demo fiction — neutral stock. */
+const COMMONS = 'https://commons.wikimedia.org/wiki/Special:FilePath'
 
 export const initialBuildings = [
   {
     id: 'b1',
     name: 'Steven J. Green School of International and Public Affairs',
     address: '11150 SW 14th St, Miami, FL 33199',
-    image: 'https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=400&q=70',
+    image: `${COMMONS}/FIU_Green_Library_South_Entrance.jpg`,
     tags: 6,
     history: 877,
   },
@@ -16,7 +19,7 @@ export const initialBuildings = [
     id: 'b2',
     name: 'Ryder Business Bldg',
     address: '11200 SW 8th St, Miami, FL 33199',
-    image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=400&q=70',
+    image: `${COMMONS}/FIU_Green_Library.JPG`,
     tags: 4,
     history: 312,
   },
