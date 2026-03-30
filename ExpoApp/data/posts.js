@@ -16,6 +16,7 @@ export const johndoePosts = [
     likes: 124,
     comments: 38,
     images: [require('../assets/johndoe-damage1.png')],
+    buildingId: 'b1',
   },
   {
     id: 'jd2',
@@ -29,6 +30,7 @@ export const johndoePosts = [
     likes: 89,
     comments: 24,
     images: [require('../assets/johndoe-damage2.png')],
+    buildingId: 'b2',
   },
   {
     id: 'jd3',
@@ -42,6 +44,7 @@ export const johndoePosts = [
     likes: 67,
     comments: 15,
     images: [require('../assets/johndoe-damage3.png')],
+    buildingId: 'b3',
   },
 ]
 
@@ -62,6 +65,7 @@ export const otherPosts = [
       { uri: 'https://images.unsplash.com/photo-1740921303129-126a783b9c6c?auto=format&fit=crop&w=1400&q=70' },
       { uri: 'https://images.unsplash.com/photo-1740921303048-6b8f232a91ff?auto=format&fit=crop&w=1400&q=70' },
     ],
+    buildingId: 'b3',
   },
   {
     id: '5',
@@ -75,6 +79,7 @@ export const otherPosts = [
     likes: 84,
     comments: 31,
     images: [{ uri: 'https://images.unsplash.com/photo-1646310585298-8a9b8ada20c5?auto=format&fit=crop&w=1400&q=70' }],
+    buildingId: 'b2',
   },
   {
     id: '6',
@@ -91,6 +96,7 @@ export const otherPosts = [
       { uri: 'https://images.unsplash.com/photo-1724230442705-646dc7c86943?auto=format&fit=crop&w=1400&q=70' },
       { uri: 'https://images.unsplash.com/photo-1768573264138-6a67ddce05cd?auto=format&fit=crop&w=1400&q=70' },
     ],
+    buildingId: 'b4',
   },
 ]
 

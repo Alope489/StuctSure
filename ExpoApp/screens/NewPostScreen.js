@@ -1,11 +1,22 @@
-import { useState, useRef } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from 'react-native'
+import { useState, useRef, useEffect } from 'react'
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+} from 'react-native'
 import Slider from '@react-native-community/slider'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Location from 'expo-location'
 import { useApp } from '../context/AppContext'
+import { fetchNearbyPublicBuildings } from '../services/nearbyPublicBuildings'
 
 const categories = [
   { id: 'structural', label: 'structural' },
@@ -25,14 +36,37 @@ export default function NewPostScreen() {
   const navigation = useNavigation()
   const { user, addPost } = useApp()
   const [permission, requestPermission] = useCameraPermissions()
-  const [locationPermission, requestLocationPermission] = Location.useForegroundPermissions()
   const [caption, setCaption] = useState('')
   const [severity, setSeverity] = useState(5)
   const [selected, setSelected] = useState(new Set(['structural']))
   const [capturedPhoto, setCapturedPhoto] = useState(null)
   const [gpsCoords, setGpsCoords] = useState(null)
+  const [nearbyOptions, setNearbyOptions] = useState([])
+  const [nearbyLoading, setNearbyLoading] = useState(false)
+  const [nearbyError, setNearbyError] = useState(null)
+  const [linkedBuilding, setLinkedBuilding] = useState(null)
   const [cameraReady, setCameraReady] = useState(false)
   const cameraRef = useRef(null)
+
+  useEffect(() => {
+    if (!gpsCoords || !capturedPhoto) return undefined
+    const ac = new AbortController()
+    setNearbyLoading(true)
+    setNearbyError(null)
+    setLinkedBuilding(null)
+    setNearbyOptions([])
+    fetchNearbyPublicBuildings(gpsCoords.latitude, gpsCoords.longitude, { signal: ac.signal })
+      .then((list) => {
+        setNearbyOptions(list)
+        setNearbyLoading(false)
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError') return
+        setNearbyError(err.message || 'Could not load nearby places.')
+        setNearbyLoading(false)
+      })
+    return () => ac.abort()
+  }, [gpsCoords, capturedPhoto])
 
   const toggle = (id) => {
     setSelected((prev) => {
@@ -60,6 +94,10 @@ export default function NewPostScreen() {
   const retake = () => {
     setCapturedPhoto(null)
     setGpsCoords(null)
+    setNearbyOptions([])
+    setNearbyLoading(false)
+    setNearbyError(null)
+    setLinkedBuilding(null)
   }
 
   const handleCancel = () => {
@@ -70,13 +108,14 @@ export default function NewPostScreen() {
   }
 
   const handleCreatePost = () => {
+    if (!linkedBuilding) return
     const title = caption.trim().slice(0, 60) || 'New damage report'
-    const locPart = gpsCoords
-      ? `\n\nLocation: Captured at ${gpsCoords.latitude.toFixed(6)}, ${gpsCoords.longitude.toFixed(6)}`
-      : ''
-    const body = caption.trim() + locPart || 'No description provided.'
+    const buildingBlock = `\n\nBuilding: ${linkedBuilding.name}${
+      linkedBuilding.addressLine ? `\n${linkedBuilding.addressLine}` : ''
+    }`
+    const body = (caption.trim() || 'No description provided.') + buildingBlock
 
-    const newPost = {
+    addPost({
       id: `new-${Date.now()}`,
       author: user?.username || 'johndoe',
       time: 'Just now',
@@ -88,12 +127,18 @@ export default function NewPostScreen() {
       likes: 0,
       comments: 0,
       images: capturedPhoto ? [{ uri: capturedPhoto }] : [],
-    }
-
-    addPost(newPost)
+      buildingId: linkedBuilding.id,
+      buildingName: linkedBuilding.name,
+      buildingAddress: linkedBuilding.addressLine,
+      latitude: linkedBuilding.lat,
+      longitude: linkedBuilding.lon,
+    })
     setCaption('')
     setCapturedPhoto(null)
     setGpsCoords(null)
+    setNearbyOptions([])
+    setNearbyError(null)
+    setLinkedBuilding(null)
     setSelected(new Set(['structural']))
     setSeverity(5)
     navigation.navigate('Home')
@@ -152,7 +197,7 @@ export default function NewPostScreen() {
               </TouchableOpacity>
             </View>
           )}
-          <Text style={styles.hint}>Photo and GPS captured at capture time.</Text>
+          <Text style={styles.hint}>Photo and location captured at capture time. Link a nearby public building below.</Text>
         </View>
 
         <Text style={styles.label}>Add a caption…</Text>
@@ -194,23 +239,60 @@ export default function NewPostScreen() {
           <Text style={styles.severityValue}>{Math.round(severity)}</Text>
         </View>
 
-        {gpsCoords && (
-          <View style={styles.gpsBox}>
-            <Text style={styles.gpsLabel}>GPS (captured)</Text>
-            <Text style={styles.gpsText}>{gpsCoords.latitude.toFixed(6)}, {gpsCoords.longitude.toFixed(6)}</Text>
+        {capturedPhoto && gpsCoords ? (
+          <View style={styles.buildingSection}>
+            <Text style={styles.label}>Link to nearby public building</Text>
+            {nearbyLoading ? (
+              <View style={styles.nearbyLoadingRow}>
+                <ActivityIndicator color="#00ff7f" />
+                <Text style={styles.nearbyHint}>Loading places from OpenStreetMap…</Text>
+              </View>
+            ) : null}
+            {nearbyError ? <Text style={styles.nearbyError}>{nearbyError}</Text> : null}
+            {!nearbyLoading && !nearbyError && nearbyOptions.length === 0 ? (
+              <Text style={styles.nearbyEmpty}>
+                No public buildings found within ~200 m. Try again outdoors or near campuses, transit, or civic buildings.
+              </Text>
+            ) : null}
+            {nearbyOptions.map((opt) => (
+              <TouchableOpacity
+                key={opt.id}
+                style={[styles.buildingRow, linkedBuilding?.id === opt.id && styles.buildingRowActive]}
+                onPress={() => setLinkedBuilding(opt)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.buildingRowName}>{opt.name}</Text>
+                {opt.addressLine ? <Text style={styles.buildingRowAddr}>{opt.addressLine}</Text> : null}
+                {opt.rawType ? <Text style={styles.buildingRowType}>{opt.rawType}</Text> : null}
+              </TouchableOpacity>
+            ))}
+            {linkedBuilding ? (
+              <View style={styles.gpsBox}>
+                <Text style={styles.gpsLabel}>Linked building</Text>
+                <Text style={styles.gpsText}>{linkedBuilding.name}</Text>
+              </View>
+            ) : null}
           </View>
-        )}
+        ) : null}
 
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
             <Text style={styles.cancelBtnText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.createBtn, (!capturedPhoto || !caption.trim()) && styles.createBtnDisabled]}
+            style={[
+              styles.createBtn,
+              (!capturedPhoto || !caption.trim() || !linkedBuilding) && styles.createBtnDisabled,
+            ]}
             onPress={handleCreatePost}
-            disabled={!capturedPhoto || !caption.trim()}
+            disabled={!capturedPhoto || !caption.trim() || !linkedBuilding}
           >
-            <Text style={[styles.createBtnText, (!capturedPhoto || !caption.trim()) && styles.createBtnTextDisabled]}>
+            <Text
+              style={[
+                styles.createBtnText,
+                (!capturedPhoto || !caption.trim() || !linkedBuilding) && styles.createBtnTextDisabled,
+              ]}
+            >
               Create Post
             </Text>
           </TouchableOpacity>
@@ -249,7 +331,24 @@ const styles = StyleSheet.create({
   severityRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   slider: { flex: 1, height: 40 },
   severityValue: { fontSize: 18, fontWeight: '600', color: '#00ff7f', minWidth: 24, textAlign: 'right' },
-  gpsBox: { backgroundColor: 'rgba(0,255,127,0.08)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(0,255,127,0.2)', marginBottom: 24 },
+  buildingSection: { marginBottom: 16 },
+  nearbyLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  nearbyHint: { fontSize: 13, color: '#888', flex: 1 },
+  nearbyError: { fontSize: 13, color: '#ff6b6b', marginBottom: 12 },
+  nearbyEmpty: { fontSize: 13, color: '#888', marginBottom: 12, lineHeight: 20 },
+  buildingRow: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  buildingRowActive: { borderColor: 'rgba(0,255,127,0.45)', backgroundColor: 'rgba(0,255,127,0.1)' },
+  buildingRowName: { fontSize: 15, fontWeight: '600', color: '#e0e0e0' },
+  buildingRowAddr: { fontSize: 12, color: '#888', marginTop: 4 },
+  buildingRowType: { fontSize: 11, color: '#666', marginTop: 2, textTransform: 'capitalize' },
+  gpsBox: { backgroundColor: 'rgba(0,255,127,0.08)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(0,255,127,0.2)', marginBottom: 24, marginTop: 8 },
   gpsLabel: { fontSize: 12, color: '#00ff7f', marginBottom: 4 },
   gpsText: { fontSize: 14, color: '#e0e0e0' },
   buttonRow: { flexDirection: 'row', marginTop: 8 },

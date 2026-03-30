@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import { allPosts, initialCommentsByPost } from '../data/posts'
+import { initialBuildings, PLACEHOLDER_BUILDING_IMAGE } from '../data/buildings'
 
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
   const [posts, setPosts] = useState([...allPosts])
+  const [buildings, setBuildings] = useState(() => [...initialBuildings])
   const [user, setUser] = useState({ photo: null, username: 'johndoe', email: 'user@domain.com' })
   const [upvotedPosts, setUpvotedPosts] = useState(new Set())
   const [commentsByPost, setCommentsByPost] = useState({ ...initialCommentsByPost })
@@ -12,6 +14,21 @@ export function AppProvider({ children }) {
   const addPost = useCallback((newPost) => {
     setPosts((prev) => [{ ...newPost, sortOrder: 0 }, ...prev])
     setCommentsByPost((prev) => ({ ...prev, [newPost.id]: [] }))
+    if (!newPost.buildingId) return
+    setBuildings((prev) => {
+      if (prev.some((b) => b.id === newPost.buildingId)) return prev
+      return [
+        {
+          id: newPost.buildingId,
+          name: newPost.buildingName || 'Building',
+          address: newPost.buildingAddress || '',
+          image: PLACEHOLDER_BUILDING_IMAGE,
+          tags: 0,
+          history: 0,
+        },
+        ...prev,
+      ]
+    })
   }, [])
 
   const deletePost = useCallback((postId) => {
@@ -53,6 +70,7 @@ export function AppProvider({ children }) {
 
   const value = {
     posts,
+    buildings,
     user,
     setUser,
     upvotedPosts,

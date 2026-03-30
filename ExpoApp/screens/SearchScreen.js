@@ -17,46 +17,6 @@ import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import { getImageSource } from '../data/posts'
 
-// Buildings - postIds reference shared post IDs (jd1,jd2,jd3,4,5,6)
-const demoBuildings = [
-  {
-    id: 'b1',
-    name: 'Steven J. Green School of International and Public Affairs',
-    address: '11150 SW 14th St, Miami, FL 33199',
-    image: 'https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=400&q=70',
-    tags: 6,
-    history: 877,
-    postIds: ['jd1', 'jd2', 'jd3', '4', '5', '6'],
-  },
-  {
-    id: 'b2',
-    name: 'Ryder Business Bldg',
-    address: '11200 SW 8th St, Miami, FL 33199',
-    image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=400&q=70',
-    tags: 4,
-    history: 312,
-    postIds: ['jd1', 'jd2', '4', '5'],
-  },
-  {
-    id: 'b3',
-    name: 'Riverside Plaza',
-    address: '214 W Pine St',
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=70',
-    tags: 8,
-    history: 1245,
-    postIds: ['jd1', 'jd3', '4', '6'],
-  },
-  {
-    id: 'b4',
-    name: 'Metro Center Garage',
-    address: 'Stairwell B, Level P2',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=400&q=70',
-    tags: 5,
-    history: 523,
-    postIds: ['jd2', 'jd3', '5', '6'],
-  },
-]
-
 function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, buildings }) {
   const insets = useSafeAreaInsets()
   const filtered = buildings.filter(
@@ -119,14 +79,17 @@ function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, building
   )
 }
 
-function BuildingDetailView({ building, postsById, onBack, onPostSelect }) {
+function BuildingDetailView({ building, posts, onBack, onPostSelect }) {
   const insets = useSafeAreaInsets()
   const { width } = Dimensions.get('window')
   const padding = 28
   const gap = 4
   const gridItemSize = (width - padding - gap * 2) / 3
-  const postList = (building?.postIds || []).map((id) => postsById[id]).filter(Boolean)
+  const postList = posts
+    .filter((p) => p.buildingId === building?.id)
+    .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
   const allImages = postList.flatMap((p) => (p?.images || []).map((img) => ({ post: p, img })))
+  const tagAggregate = postList.reduce((sum, p) => sum + (p.tags?.length || 0) + (p.tagsMore || 0), 0)
 
   return (
     <ScrollView style={styles.detailScroll} contentContainerStyle={styles.detailScrollContent}>
@@ -141,10 +104,10 @@ function BuildingDetailView({ building, postsById, onBack, onPostSelect }) {
         <Image source={{ uri: building?.image }} style={styles.buildingImage} />
         <View style={styles.buildingBadges}>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{building?.tags || 0} Tags</Text>
+            <Text style={styles.badgeText}>{tagAggregate} Tags</Text>
           </View>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{building?.history || 0} History</Text>
+            <Text style={styles.badgeText}>{postList.length} Reports</Text>
           </View>
         </View>
       </View>
@@ -184,10 +147,10 @@ function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPost
         <Text style={styles.detailTitle}>Search</Text>
       </View>
 
-      {building && (
+      {(building || post?.buildingName) && (
         <View style={styles.postDetailBuildingBar}>
-          <Text style={styles.postDetailBuildingName}>{building.name}</Text>
-          <Text style={styles.postDetailBuildingAddress}>{building.address}</Text>
+          <Text style={styles.postDetailBuildingName}>{building?.name || post?.buildingName}</Text>
+          <Text style={styles.postDetailBuildingAddress}>{building?.address || post?.buildingAddress || ''}</Text>
         </View>
       )}
 
@@ -262,20 +225,18 @@ function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPost
         </View>
       </View>
 
-      {building && (
+      {(building?.address || post?.buildingAddress) ? (
         <View style={styles.postDetailLocationBar}>
           <Ionicons name="location-outline" size={14} color="#888" />
-          <Text style={styles.postDetailLocation}>{building.address}</Text>
+          <Text style={styles.postDetailLocation}>{building?.address || post?.buildingAddress}</Text>
         </View>
-      )}
+      ) : null}
     </ScrollView>
   )
 }
 
 export default function SearchScreen() {
-  const insets = useSafeAreaInsets()
-  const { posts, user, deletePost, getDisplayCommentCount } = useApp()
-  const postsById = Object.fromEntries(posts.map((p) => [p.id, p]))
+  const { posts, buildings, user, deletePost, getDisplayCommentCount } = useApp()
 
   const handlePostMenu = (post) => {
     const isOwn = post?.author === (user?.username || 'johndoe')
@@ -319,7 +280,7 @@ export default function SearchScreen() {
     return (
       <BuildingDetailView
         building={selectedBuilding}
-        postsById={postsById}
+        posts={posts}
         onBack={goBack}
         onPostSelect={handlePostSelect}
       />
@@ -343,7 +304,7 @@ export default function SearchScreen() {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       onBuildingSelect={handleBuildingSelect}
-      buildings={demoBuildings}
+      buildings={buildings}
     />
   )
 }
