@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import { getImageSource, getResolutionStatus } from '../data/posts'
 
-function PostCard({ post, isUpvoted, onUpvote, onComment, displayCommentCount, onPostMenu, onBuildingPress, buildingLabel }) {
+function PostCard({ post, isUpvoted, onUpvote, onComment, displayCommentCount, onPostMenu, onBuildingPress, buildingLabel, onAuthorPress }) {
   const { width: winWidth } = useWindowDimensions()
   const width = winWidth || Dimensions.get('window').width
   const slideWidth = Math.max(width - 52, 280)
@@ -23,13 +23,20 @@ function PostCard({ post, isUpvoted, onUpvote, onComment, displayCommentCount, o
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initial}</Text>
-        </View>
-        <View style={styles.meta}>
-          <Text style={styles.author}>{post.author}</Text>
-          <Text style={styles.time}>{post.time}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.cardAuthorHit}
+          onPress={onAuthorPress}
+          activeOpacity={0.7}
+          disabled={!onAuthorPress}
+        >
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initial}</Text>
+          </View>
+          <View style={styles.meta}>
+            <Text style={styles.author}>{post.author}</Text>
+            <Text style={styles.time}>{post.time}</Text>
+          </View>
+        </TouchableOpacity>
         {onPostMenu && (
           <TouchableOpacity onPress={() => onPostMenu(post)} style={styles.menuBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="ellipsis-vertical" size={20} color="#888" />
@@ -216,7 +223,13 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
-        <Text style={styles.brand}>StructSure</Text>
+        <Image
+          source={require('../assets/StructSure-Logo-Horizontal.png')}
+          style={styles.brandLogo}
+          resizeMode="contain"
+          accessibilityRole="header"
+          accessibilityLabel="StructSure"
+        />
         <TouchableOpacity onPress={() => setProfileOpen(true)} style={styles.profileBtn} activeOpacity={0.7} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Image source={user?.photo ? { uri: user.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
         </TouchableOpacity>
@@ -231,6 +244,7 @@ export default function HomeScreen({ navigation }) {
             onComment={setCommentsOpenForPostId}
             displayCommentCount={getDisplayCommentCount(p.id)}
             onPostMenu={handlePostMenu}
+            onAuthorPress={() => navigation.navigate('Profile', { profileUsername: p.author })}
             onBuildingPress={
               p.buildingId
                 ? () => navigation.navigate('Search', { openBuildingId: p.buildingId })
@@ -354,7 +368,8 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d0d0d' },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
-  brand: { fontSize: 18, fontWeight: '600', color: '#e0e0e0' },
+  brandLogo: { height: 28, width: 168, maxWidth: '58%' },
+  cardAuthorHit: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
   profileBtn: { padding: 4 },
   profilePic: { width: 40, height: 40, borderRadius: 20 },
   profilePicPlaceholder: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },

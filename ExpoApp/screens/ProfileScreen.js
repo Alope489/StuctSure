@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import { getImageSource, getResolutionStatus } from '../data/posts'
@@ -11,7 +11,8 @@ const POST_BLOCK_HEIGHT = SCREEN_WIDTH + 420
 
 function PostDetailBlock({ post, commentsByPost, upvotedPosts, toggleUpvote, getDisplayCommentCount, onPostMenu }) {
   const [carouselIdx, setCarouselIdx] = useState(0)
-  const address = post.body?.match(/Address: ([^\n]+)/)?.[1] || ''
+  const address =
+    post.buildingAddress || post.body?.match(/Address: ([^\n]+)/)?.[1] || post.body?.match(/Building:[^\n]+\n([^\n]+)/)?.[1] || ''
   const metaText = address ? `${post.time} • ${address}` : post.time
   const isUpvoted = upvotedPosts.has(post.id)
   const upvoteCount = post.likes + (isUpvoted ? 1 : 0)
@@ -128,7 +129,12 @@ function PostDetailBlock({ post, commentsByPost, upvotedPosts, toggleUpvote, get
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
+  const route = useRoute()
   const { user, posts, commentsByPost, addComment, deletePost, updatePostResolution, upvotedPosts, toggleUpvote, getDisplayCommentCount } = useApp()
+  const profileUsername = route.params?.profileUsername
+  const selfName = user?.username || 'johndoe'
+  const displayUsername = profileUsername ?? selfName
+  const isOwnProfile = displayUsername === selfName
 
   const handlePostMenu = (post) => {
     const isOwn = post.author === (user?.username || 'johndoe')
@@ -175,7 +181,7 @@ export default function ProfileScreen() {
       { text: 'Sign out', style: 'destructive', onPress: () => navigation.navigate('Login') },
     ])
   }
-  const myPosts = posts.filter((p) => p.author === 'johndoe')
+  const displayedPosts = posts.filter((p) => p.author === displayUsername)
   const [selectedPostId, setSelectedPostId] = useState(null)
   const [commentInput, setCommentInput] = useState('')
   const { width } = Dimensions.get('window')
@@ -186,14 +192,14 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (selectedPostId && postFeedRef.current) {
-      const idx = myPosts.findIndex((p) => p.id === selectedPostId)
+      const idx = displayedPosts.findIndex((p) => p.id === selectedPostId)
       if (idx >= 0) {
         setTimeout(() => {
           postFeedRef.current?.scrollTo({ y: idx * POST_BLOCK_HEIGHT, animated: false })
         }, 50)
       }
     }
-  }, [selectedPostId, myPosts])
+  }, [selectedPostId, displayedPosts])
 
   const handleAddComment = () => {
     if (!selectedPostId || !commentInput.trim()) return
@@ -204,39 +210,60 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
+        {!isOwnProfile ? (
+          <TouchableOpacity
+            onPress={() => navigation.setParams({ profileUsername: undefined })}
+            style={styles.profileBackBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="arrow-back" size={24} color="#e0e0e0" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.topbarSide} />
+        )}
         <Text style={styles.brand}>StructSure</Text>
-        <TouchableOpacity style={styles.settingsBtn} onPress={handleSettingsPress} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Ionicons name="settings-outline" size={24} color="#888" />
-        </TouchableOpacity>
+        {isOwnProfile ? (
+          <TouchableOpacity style={styles.settingsBtn} onPress={handleSettingsPress} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Ionicons name="settings-outline" size={24} color="#888" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.topbarSide} />
+        )}
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
           <View style={styles.profilePicWrap}>
-            <Image source={user.photo ? { uri: user.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
+            {isOwnProfile ? (
+              <Image source={user.photo ? { uri: user.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
+            ) : (
+              <View style={[styles.profilePic, styles.profilePicOther]}>
+                <Text style={styles.profilePicOtherText}>{displayUsername.trim().slice(0, 1).toUpperCase()}</Text>
+              </View>
+            )}
           </View>
-          <Text style={styles.username}>{user.username}</Text>
-          <Text style={styles.email}>{user.email}</Text>
+          <Text style={styles.username}>{displayUsername}</Text>
+          {isOwnProfile ? <Text style={styles.email}>{user.email}</Text> : null}
         </View>
 
         <View style={styles.statsRow}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{myPosts.length}</Text>
+            <Text style={styles.statValue}>{displayedPosts.length}</Text>
             <Text style={styles.statLabel}>Posts</Text>
           </View>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{myPosts.reduce((s, p) => s + p.likes, 0)}</Text>
+            <Text style={styles.statValue}>{displayedPosts.reduce((s, p) => s + p.likes, 0)}</Text>
             <Text style={styles.statLabel}>Upvotes</Text>
           </View>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{myPosts.reduce((s, p) => s + p.comments, 0)}</Text>
+            <Text style={styles.statValue}>{displayedPosts.reduce((s, p) => s + p.comments, 0)}</Text>
             <Text style={styles.statLabel}>Comments</Text>
           </View>
         </View>
 
         <Text style={styles.sectionTitle}>Post status</Text>
         <View style={[styles.postGrid, { gap }]}>
-          {myPosts.map((post) => {
+          {displayedPosts.map((post) => {
             const firstImg = post.images?.[0]
             const src = firstImg ? getImageSource(firstImg) : null
             return (
@@ -269,7 +296,7 @@ export default function ProfileScreen() {
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
             >
-              {myPosts.map((post) => (
+              {displayedPosts.map((post) => (
                 <PostDetailBlock
                   key={post.id}
                   post={post}
@@ -318,13 +345,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
   },
-  brand: { fontSize: 18, fontWeight: '600', color: '#e0e0e0' },
+  topbarSide: { width: 40, height: 40 },
+  profileBackBtn: { width: 40, height: 40, justifyContent: 'center' },
+  brand: { fontSize: 18, fontWeight: '600', color: '#e0e0e0', flex: 1, textAlign: 'center' },
   settingsBtn: { padding: 4 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
   profileSection: { alignItems: 'center', paddingVertical: 24 },
   profilePicWrap: { marginBottom: 12 },
   profilePic: { width: 100, height: 100, borderRadius: 50 },
+  profilePicOther: {
+    backgroundColor: 'rgba(0,255,127,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profilePicOtherText: { fontSize: 40, fontWeight: '700', color: '#e0e0e0' },
   profilePicPlaceholder: {
     width: 100,
     height: 100,

@@ -186,7 +186,7 @@ function BuildingDetailView({ building, posts, onBack, onPostSelect }) {
   )
 }
 
-function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPostMenu, onOpenBuildingProfile }) {
+function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPostMenu, onOpenBuildingProfile, onAuthorProfile }) {
   const insets = useSafeAreaInsets()
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const images = post?.images || []
@@ -203,36 +203,41 @@ function PostDetailView({ post, building, onBack, getDisplayCommentCount, onPost
         <Text style={styles.detailTitle}>Search</Text>
       </View>
 
-      {(building || post?.buildingName) && (
+      {canOpenBuilding ? (
         <TouchableOpacity
-          style={styles.postDetailBuildingBar}
-          onPress={canOpenBuilding ? onOpenBuildingProfile : undefined}
-          activeOpacity={canOpenBuilding ? 0.7 : 1}
-          disabled={!canOpenBuilding}
+          style={styles.postDetailBuildingLink}
+          onPress={onOpenBuildingProfile}
+          activeOpacity={0.7}
         >
-          <View style={styles.postDetailBuildingBarInner}>
-            <Text style={styles.postDetailBuildingName}>{building?.name || post?.buildingName}</Text>
-            <Text style={styles.postDetailBuildingAddress}>{building?.address || post?.buildingAddress || ''}</Text>
-          </View>
-          {canOpenBuilding ? <Ionicons name="chevron-forward" size={20} color="#666" /> : null}
+          <Ionicons name="business-outline" size={16} color="#00ff7f" />
+          <Text style={styles.postDetailBuildingLinkText}>Building profile</Text>
+          <Ionicons name="chevron-forward" size={16} color="#666" />
         </TouchableOpacity>
-      )}
+      ) : null}
 
       <View style={styles.postDetailAuthorRow}>
-        <View style={styles.postDetailAvatar}>
-          <Text style={styles.postDetailAvatarText}>{(post?.author || '?').slice(0, 1)}</Text>
-        </View>
-        <View style={styles.postDetailMeta}>
-          <Text style={styles.postDetailAuthor}>{post?.author}</Text>
-          <Text style={styles.postDetailTime}>{post?.time}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.postDetailAuthorHit}
+          onPress={() => onAuthorProfile?.(post?.author)}
+          activeOpacity={0.7}
+          disabled={!onAuthorProfile || !post?.author}
+        >
+          <View style={styles.postDetailAvatar}>
+            <Text style={styles.postDetailAvatarText}>{(post?.author || '?').slice(0, 1)}</Text>
+          </View>
+          <View style={styles.postDetailMeta}>
+            <Text style={styles.postDetailAuthor}>{post?.author}</Text>
+            <Text style={styles.postDetailTime}>{post?.time}</Text>
+          </View>
+        </TouchableOpacity>
         {onPostMenu && (
-          <TouchableOpacity onPress={() => onPostMenu(post)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity onPress={() => onPostMenu(post)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.postDetailMenuBtn}>
             <Ionicons name="ellipsis-vertical" size={20} color="#888" />
           </TouchableOpacity>
         )}
       </View>
 
+      {post?.title ? <Text style={styles.postDetailPostTitle}>{post.title}</Text> : null}
       {post?.body ? <Text style={styles.postDetailBody}>{post.body}</Text> : null}
 
       {images.length > 0 && (
@@ -413,6 +418,7 @@ export default function SearchScreen() {
         onBack={goBack}
         getDisplayCommentCount={getDisplayCommentCount}
         onPostMenu={handlePostMenu}
+        onAuthorProfile={(author) => author && navigation.navigate('Profile', { profileUsername: author })}
         onOpenBuildingProfile={() => {
           const b =
             selectedBuilding?.id === selectedPost.buildingId
@@ -557,18 +563,20 @@ const styles = StyleSheet.create({
 
   postDetailScroll: { flex: 1, backgroundColor: '#0d0d0d' },
   postDetailContent: { paddingBottom: 40 },
-  postDetailBuildingBar: {
+  postDetailBuildingLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
     gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,255,127,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,255,127,0.2)',
   },
-  postDetailBuildingBarInner: { flex: 1 },
-  postDetailBuildingName: { fontSize: 14, fontWeight: '600', color: '#e0e0e0' },
-  postDetailBuildingAddress: { fontSize: 12, color: '#888', marginTop: 2 },
+  postDetailBuildingLinkText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#00ff7f' },
   postDetailBody: {
     fontSize: 15,
     color: 'rgba(224,224,224,0.95)',
@@ -604,7 +612,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 12,
+  },
+  postDetailAuthorHit: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  postDetailMenuBtn: { padding: 4 },
+  postDetailPostTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#e0e0e0',
+    paddingHorizontal: 16,
+    marginBottom: 8,
   },
   postDetailAvatar: {
     width: 36,

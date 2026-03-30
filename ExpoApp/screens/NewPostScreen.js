@@ -36,6 +36,7 @@ export default function NewPostScreen() {
   const navigation = useNavigation()
   const { user, addPost } = useApp()
   const [permission, requestPermission] = useCameraPermissions()
+  const [postTitle, setPostTitle] = useState('')
   const [caption, setCaption] = useState('')
   const [severity, setSeverity] = useState(5)
   const [selected, setSelected] = useState(new Set(['structural']))
@@ -110,11 +111,6 @@ export default function NewPostScreen() {
 
   const handleCreatePost = () => {
     if (!linkedBuilding) return
-    const title = caption.trim().slice(0, 60) || 'New damage report'
-    const buildingBlock = `\n\nBuilding: ${linkedBuilding.name}${
-      linkedBuilding.addressLine ? `\n${linkedBuilding.addressLine}` : ''
-    }`
-    const body = (caption.trim() || 'No description provided.') + buildingBlock
 
     addPost({
       id: `new-${Date.now()}`,
@@ -123,8 +119,8 @@ export default function NewPostScreen() {
       sortOrder: 0,
       tags: [...selected],
       tagsMore: 0,
-      title,
-      body,
+      title: postTitle.trim(),
+      body: caption.trim() || 'No description provided.',
       likes: 0,
       comments: 0,
       images: capturedPhoto ? [{ uri: capturedPhoto }] : [],
@@ -136,6 +132,7 @@ export default function NewPostScreen() {
       longitude: linkedBuilding.lon,
       resolutionStatus,
     })
+    setPostTitle('')
     setCaption('')
     setCapturedPhoto(null)
     setGpsCoords(null)
@@ -166,7 +163,7 @@ export default function NewPostScreen() {
     <View style={styles.container}>
       <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
         <TouchableOpacity
-          onPress={() => (caption || capturedPhoto ? handleCancel() : navigation.navigate('Home'))}
+          onPress={() => (caption || postTitle.trim() || capturedPhoto ? handleCancel() : navigation.navigate('Home'))}
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
@@ -204,7 +201,17 @@ export default function NewPostScreen() {
           <Text style={styles.hint}>Photo and location captured at capture time. Link a nearby public building below.</Text>
         </View>
 
-        <Text style={styles.label}>Add a caption…</Text>
+        <Text style={styles.label}>Title</Text>
+        <TextInput
+          style={styles.titleInput}
+          value={postTitle}
+          onChangeText={setPostTitle}
+          placeholder="Short headline for this report"
+          placeholderTextColor="#888"
+          maxLength={120}
+        />
+
+        <Text style={styles.label}>Comment</Text>
         <TextInput
           style={styles.input}
           value={caption}
@@ -302,15 +309,17 @@ export default function NewPostScreen() {
           <TouchableOpacity
             style={[
               styles.createBtn,
-              (!capturedPhoto || !caption.trim() || !linkedBuilding || !resolutionStatus) && styles.createBtnDisabled,
+              (!capturedPhoto || !postTitle.trim() || !caption.trim() || !linkedBuilding || !resolutionStatus) &&
+                styles.createBtnDisabled,
             ]}
             onPress={handleCreatePost}
-            disabled={!capturedPhoto || !caption.trim() || !linkedBuilding || !resolutionStatus}
+            disabled={!capturedPhoto || !postTitle.trim() || !caption.trim() || !linkedBuilding || !resolutionStatus}
           >
             <Text
               style={[
                 styles.createBtnText,
-                (!capturedPhoto || !caption.trim() || !linkedBuilding || !resolutionStatus) && styles.createBtnTextDisabled,
+                (!capturedPhoto || !postTitle.trim() || !caption.trim() || !linkedBuilding || !resolutionStatus) &&
+                  styles.createBtnTextDisabled,
               ]}
             >
               Create Post
@@ -342,6 +351,14 @@ const styles = StyleSheet.create({
   captureBtnText: { color: '#00ff7f', fontWeight: '600' },
   hint: { fontSize: 12, color: '#888', marginTop: 8 },
   label: { fontSize: 13, color: '#888', marginBottom: 8 },
+  titleInput: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
+    padding: 14,
+    color: '#e0e0e0',
+    fontSize: 16,
+    marginBottom: 16,
+  },
   input: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 14, color: '#e0e0e0', fontSize: 16, minHeight: 80, textAlignVertical: 'top', marginBottom: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
