@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native'
 import Slider from '@react-native-community/slider'
@@ -16,7 +15,24 @@ import { useNavigation } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Location from 'expo-location'
 import { useApp } from '../context/AppContext'
+import { useThemedDialog } from '../context/ThemedDialogContext'
+import { Ionicons } from '@expo/vector-icons'
 import { fetchNearbyPublicBuildings } from '../services/nearbyPublicBuildings'
+
+const NEW_POST_BACK_CYAN = '#00ffff'
+
+function leaveNewPost(navigation) {
+  if (navigation.canGoBack()) {
+    navigation.goBack()
+    return
+  }
+  const tabNav = navigation.getParent()
+  if (tabNav?.canGoBack?.()) {
+    tabNav.goBack()
+    return
+  }
+  navigation.navigate('Home')
+}
 
 const categories = [
   { id: 'structural', label: 'structural' },
@@ -34,6 +50,7 @@ const categories = [
 export default function NewPostScreen() {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
+  const showThemedDialog = useThemedDialog()
   const { user, addPost } = useApp()
   const [permission, requestPermission] = useCameraPermissions()
   const [postTitle, setPostTitle] = useState('')
@@ -103,10 +120,14 @@ export default function NewPostScreen() {
   }
 
   const handleCancel = () => {
-    Alert.alert('Are you sure?', 'Your post will not be saved. Do you want to discard it?', [
-      { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: () => navigation.navigate('Home') },
-    ])
+    showThemedDialog({
+      title: 'Are you sure?',
+      message: 'Your post will not be saved. Do you want to discard it?',
+      buttons: [
+        { text: 'Keep editing', style: 'cancel', onPress: () => {} },
+        { text: 'Discard', style: 'destructive', onPress: () => leaveNewPost(navigation) },
+      ],
+    })
   }
 
   const handleCreatePost = () => {
@@ -117,7 +138,7 @@ export default function NewPostScreen() {
       author: user?.username || 'johndoe',
       time: 'Just now',
       sortOrder: 0,
-      tags: [...selected],
+      tags: [...selected].map((id) => categories.find((c) => c.id === id)?.label || id),
       tagsMore: 0,
       title: postTitle.trim(),
       body: caption.trim() || 'No description provided.',
@@ -130,6 +151,7 @@ export default function NewPostScreen() {
       latitude: linkedBuilding.lat,
       longitude: linkedBuilding.lon,
       resolutionStatus,
+      severity: Math.round(severity),
     })
     setPostTitle('')
     setCaption('')
@@ -162,11 +184,14 @@ export default function NewPostScreen() {
     <View style={styles.container}>
       <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
         <TouchableOpacity
-          onPress={() => (caption || postTitle.trim() || capturedPhoto ? handleCancel() : navigation.navigate('Home'))}
+          onPress={() => (caption || postTitle.trim() || capturedPhoto ? handleCancel() : leaveNewPost(navigation))}
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={styles.backText}>← Back</Text>
+          <View style={styles.backRow}>
+            <Ionicons name="arrow-back" size={24} color={NEW_POST_BACK_CYAN} />
+            <Text style={styles.backText}>Back</Text>
+          </View>
         </TouchableOpacity>
         <Text style={styles.title}>New post</Text>
       </View>
@@ -335,7 +360,8 @@ const styles = StyleSheet.create({
   text: { color: '#e0e0e0', fontSize: 16 },
   topbar: { flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   backBtn: { marginRight: 12 },
-  backText: { color: '#00ffff', fontSize: 16 },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  backText: { color: NEW_POST_BACK_CYAN, fontSize: 16 },
   title: { fontSize: 18, fontWeight: '600', color: '#e0e0e0' },
   scroll: { flex: 1 },
   scrollContent: { padding: 14, paddingBottom: 40 },
@@ -361,9 +387,9 @@ const styles = StyleSheet.create({
   input: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 14, color: '#e0e0e0', fontSize: 16, minHeight: 80, textAlignVertical: 'top', marginBottom: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  chipActive: { backgroundColor: 'rgba(0,255,127,0.15)', borderColor: 'rgba(0,255,127,0.3)' },
+  chipActive: { backgroundColor: '#20E3D0', borderColor: 'transparent' },
   chipText: { fontSize: 12, color: '#888' },
-  chipTextActive: { color: '#00ff7f' },
+  chipTextActive: { color: '#0a1620', fontWeight: '600' },
   severityRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   slider: { flex: 1, height: 40 },
   severityValue: { fontSize: 18, fontWeight: '600', color: '#00ff7f', minWidth: 24, textAlign: 'right' },

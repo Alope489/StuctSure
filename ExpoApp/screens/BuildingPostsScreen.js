@@ -1,30 +1,71 @@
 import { useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native'
+import { useRoute, useNavigation } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+
 import { useApp } from '../context/AppContext'
 import { useThemedDialog } from '../context/ThemedDialogContext'
 import { PostCard } from '../components/PostCard'
-import { AccountSidePanel } from '../components/AccountSidePanel'
+import { getResolutionStatus } from '../data/posts'
 
-export default function HomeScreen({ navigation }) {
+const FEED_ITEM_LENGTH = 650
+
+export default function BuildingPostsScreen() {
+  const route = useRoute()
+  const navigation = useNavigation()
   const insets = useSafeAreaInsets()
   const showThemedDialog = useThemedDialog()
   const {
     posts,
     buildings,
     user,
-    upvotedPosts,
-    commentsByPost,
-    toggleUpvote,
-    addComment,
     deletePost,
-    updatePostResolution,
     getDisplayCommentCount,
+    updatePostResolution,
+    addComment,
+    commentsByPost,
+    upvotedPosts,
+    toggleUpvote,
   } = useApp()
 
+  const buildingId = route.params?.buildingId
+  const postTab = route.params?.postTab || 'unresolved'
+  const initialPostId = route.params?.initialPostId
+
+  const forBuilding = posts
+    .filter((p) => p.buildingId === buildingId)
+    .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
+  const tabPosts = forBuilding.filter((p) => getResolutionStatus(p) === postTab)
+  const anchorPost = tabPosts.find((p) => p.id === initialPostId) || tabPosts[0]
+
+  const [commentsOpenForPostId, setCommentsOpenForPostId] = useState(null)
+  const [commentInput, setCommentInput] = useState('')
+
+  const closeComments = () => {
+    setCommentsOpenForPostId(null)
+    setCommentInput('')
+  }
+
+  const handleAddComment = () => {
+    if (!commentsOpenForPostId || !commentInput.trim()) return
+    addComment(commentsOpenForPostId, { text: commentInput.trim(), time: 'Just now' })
+    setCommentInput('')
+  }
+
   const handlePostMenu = (post) => {
-    const isOwn = post.author === (user?.username || 'johndoe')
+    const isOwn = post?.author === (user?.username || 'johndoe')
     if (isOwn) {
       showThemedDialog({
         title: 'Your post',
@@ -52,7 +93,14 @@ export default function HomeScreen({ navigation }) {
                 message: 'Are you sure you want to delete this post?',
                 buttons: [
                   { text: 'Cancel', style: 'cancel', onPress: () => {} },
-                  { text: 'Delete', style: 'destructive', onPress: () => deletePost(post.id) },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                      deletePost(post.id)
+                      navigation.goBack()
+                    },
+                  },
                 ],
               }),
           },
@@ -78,39 +126,41 @@ export default function HomeScreen({ navigation }) {
       })
     }
   }
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [commentsOpenForPostId, setCommentsOpenForPostId] = useState(null)
-  const [commentInput, setCommentInput] = useState('')
-
-  const handleAddComment = () => {
-    if (!commentsOpenForPostId || !commentInput.trim()) return
-    addComment(commentsOpenForPostId, { text: commentInput.trim(), time: 'Just now' })
-    setCommentInput('')
-  }
-
-  const closeComments = () => {
-    setCommentsOpenForPostId(null)
-    setCommentInput('')
-  }
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
-        <Image
-          source={require('../assets/StructSure-Logo-Horizontal.png')}
-          style={styles.brandLogo}
-          resizeMode="contain"
-          accessibilityRole="header"
-          accessibilityLabel="StructSure"
-        />
-        <TouchableOpacity onPress={() => setProfileOpen(true)} style={styles.profileBtn} activeOpacity={0.7} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Image source={user?.photo ? { uri: user.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
+    <View style={styles.screen}>
+      <View style={[styles.detailHeader, { paddingTop: 14 + insets.top }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Ionicons name="arrow-back" size={24} color="#e0e0e0" />
         </TouchableOpacity>
+        <View style={styles.headerSpacer} />
       </View>
-      <ScrollView style={styles.feed} contentContainerStyle={styles.feedContent}>
-        {posts.map((p) => (
+      <FlatList
+        key={anchorPost?.id || 'feed'}
+        style={styles.postFeedList}
+        data={tabPosts}
+        keyExtractor={(item) => item.id}
+        initialScrollIndex={
+          tabPosts.length > 0 && anchorPost
+            ? Math.min(Math.max(0, tabPosts.findIndex((p) => p.id === anchorPost.id)), tabPosts.length - 1)
+            : 0
+        }
+        onScrollToIndexFailed={() => {}}
+        getItemLayout={(_, index) => ({
+          length: FEED_ITEM_LENGTH,
+          offset: 8 + FEED_ITEM_LENGTH * index,
+          index,
+        })}
+        ListEmptyComponent={
+          <View style={styles.emptyFeed}>
+            <Text style={styles.emptyFeedText}>No posts in this tab.</Text>
+          </View>
+        }
+        contentContainerStyle={tabPosts.length === 0 ? styles.postFeedContentEmpty : styles.postFeedContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item: p }) => (
           <PostCard
-            key={p.id}
             post={p}
             isUpvoted={upvotedPosts.has(p.id)}
             onUpvote={toggleUpvote}
@@ -118,6 +168,7 @@ export default function HomeScreen({ navigation }) {
             displayCommentCount={getDisplayCommentCount(p.id)}
             onPostMenu={handlePostMenu}
             onAuthorPress={() =>
+              p.author &&
               navigation.navigate('Profile', { screen: 'ProfileMain', params: { profileUsername: p.author } })
             }
             onBuildingPress={
@@ -131,10 +182,8 @@ export default function HomeScreen({ navigation }) {
             }
             buildingLabel={p.buildingName || buildings.find((b) => b.id === p.buildingId)?.name}
           />
-        ))}
-      </ScrollView>
-
-      <AccountSidePanel visible={profileOpen} onClose={() => setProfileOpen(false)} navigation={navigation} />
+        )}
+      />
 
       <Modal visible={!!commentsOpenForPostId} transparent animationType="slide">
         <View style={styles.commentModalOverlay}>
@@ -204,13 +253,23 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0d' },
-  topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
-  brandLogo: { height: 28, width: 168, maxWidth: '58%' },
-  profileBtn: { padding: 4 },
-  profilePic: { width: 40, height: 40, borderRadius: 20 },
-  feed: { flex: 1 },
-  feedContent: { padding: 14, gap: 14 },
+  screen: { flex: 1, backgroundColor: '#0d0d0d' },
+  emptyFeed: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  emptyFeedText: { color: '#888', fontSize: 15 },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  backBtn: { marginRight: 12 },
+  headerSpacer: { flex: 1 },
+  postFeedList: { flex: 1 },
+  postFeedContent: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 24 },
+  postFeedContentEmpty: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 24 },
+
   commentModalOverlay: { flex: 1, justifyContent: 'flex-end' },
   commentModalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
   commentModalPanel: {

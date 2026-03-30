@@ -1,32 +1,52 @@
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { NavigationContainer } from '@react-navigation/native'
+import { NavigationContainer, DarkTheme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
 
 import { AppProvider } from './context/AppContext'
+import { ThemedDialogProvider } from './context/ThemedDialogContext'
 import LoadingScreen from './screens/LoadingScreen'
 import LoginScreen from './screens/LoginScreen'
 import SignupScreen from './screens/SignupScreen'
 import HomeScreen from './screens/HomeScreen'
-import SearchScreen from './screens/SearchScreen'
+import SearchStack from './navigation/SearchStack'
 import NewPostScreen from './screens/NewPostScreen'
 import NotificationsScreen from './screens/NotificationsScreen'
-import ProfileScreen from './screens/ProfileScreen'
+import ProfileStack from './navigation/ProfileStack'
 
 const Stack = createNativeStackNavigator()
 const Tab = createBottomTabNavigator()
 
+const navTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: '#0d0d0d',
+    card: '#0d0d0d',
+  },
+}
+
+const stackScreenOpts = {
+  headerShown: false,
+  contentStyle: { backgroundColor: '#0d0d0d' },
+  animation: 'fade',
+}
+
 function MainTabs() {
   return (
     <Tab.Navigator
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: true,
+        lazy: false,
         tabBarStyle: { backgroundColor: '#0d0d0d', borderTopColor: 'rgba(255,255,255,0.08)' },
         tabBarActiveTintColor: '#00ff7f',
         tabBarInactiveTintColor: '#888',
         tabBarShowLabel: false,
+        sceneStyle: { backgroundColor: '#0d0d0d' },
       }}
     >
       <Tab.Screen
@@ -36,7 +56,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Search"
-        component={SearchScreen}
+        component={SearchStack}
         options={{ tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} /> }}
       />
       <Tab.Screen
@@ -58,7 +78,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileStack}
         options={{ tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> }}
       />
     </Tab.Navigator>
@@ -68,17 +88,19 @@ function MainTabs() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-      <StatusBar style="light" />
-      <AppProvider>
-      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0d0d0d' } }}>
-        <Stack.Screen name="Loading" component={LoadingScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Signup" component={SignupScreen} />
-        <Stack.Screen name="Main" component={MainTabs} />
-      </Stack.Navigator>
-      </AppProvider>
-    </NavigationContainer>
+      <NavigationContainer theme={navTheme}>
+        <StatusBar style="light" />
+        <AppProvider>
+          <ThemedDialogProvider>
+            <Stack.Navigator screenOptions={stackScreenOpts}>
+              <Stack.Screen name="Loading" component={LoadingScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Signup" component={SignupScreen} />
+              <Stack.Screen name="Main" component={MainTabs} />
+            </Stack.Navigator>
+          </ThemedDialogProvider>
+        </AppProvider>
+      </NavigationContainer>
     </SafeAreaProvider>
   )
 }

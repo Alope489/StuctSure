@@ -1,14 +1,14 @@
 # PostCard component
 
-[`ExpoApp/components/PostCard.js`](../ExpoApp/components/PostCard.js) renders a single post in the same layout as the **Home** feed: author row, horizontal image carousel (200px height), title/body, optional building link, resolution + tag chips, upvote and comment actions.
+[`ExpoApp/components/PostCard.js`](../ExpoApp/components/PostCard.js) renders a single post in the same layout as the **Home** feed: author row, **square** horizontal image carousel (width ≈ card inner width, 1:1 like New Post capture), title/body, optional building link, **cyan** pill chips for resolution + every category from [`getPostCategoryTags`](../ExpoApp/data/posts.js) (no “+N more” summary), upvote and comment actions.
 
 ## Usage
 
 Imported by:
 
 - [`ExpoApp/screens/HomeScreen.js`](../ExpoApp/screens/HomeScreen.js) — main feed
-- [`ExpoApp/screens/ProfileScreen.js`](../ExpoApp/screens/ProfileScreen.js) — full-screen modal `FlatList` of the viewed user’s posts (scroll to tapped grid item)
-- [`ExpoApp/screens/SearchScreen.js`](../ExpoApp/screens/SearchScreen.js) — building tab feed (`FlatList` of unresolved or resolved posts for the open building)
+- [`ExpoApp/screens/ProfilePostsScreen.js`](../ExpoApp/screens/ProfilePostsScreen.js) — profile tab stack: `FlatList` anchored to the grid tile
+- [`ExpoApp/screens/BuildingPostsScreen.js`](../ExpoApp/screens/BuildingPostsScreen.js) — search tab stack: building’s unresolved/resolved feed
 
 ## Props
 
@@ -27,4 +27,8 @@ Comments are not inlined in the card; screens open a bottom sheet modal (same pa
 
 ## Scroll anchoring
 
-Profile and Search use `FlatList` with `initialScrollIndex` and a fixed `getItemLayout` estimate (`~520px` per row) so opening a post from a grid lands near that item; actual card height varies slightly with content.
+Profile and Search post feeds use `FlatList` with `initialScrollIndex` and a fixed `getItemLayout` estimate (`~650px` per row) so opening a post from a grid lands near that item; actual card height varies slightly with content.
+
+## Navigation
+
+Search and Profile tabs use nested stack navigators ([`SearchStack`](../ExpoApp/navigation/SearchStack.js), [`ProfileStack`](../ExpoApp/navigation/ProfileStack.js)) so the **bottom tab bar stays visible** while viewing post feeds.
