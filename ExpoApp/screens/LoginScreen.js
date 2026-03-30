@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 
@@ -10,7 +10,12 @@ export default function LoginScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Text style={[styles.label, { top: 48 + insets.top }]}>login</Text>
       <View style={styles.content}>
-        <Text style={styles.logo}>StructSure</Text>
+        <Image
+          source={require('../assets/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="StructSure"
+        />
         <TextInput style={styles.input} placeholder="username" placeholderTextColor="#888" />
         <TextInput style={styles.input} placeholder="••••••••" placeholderTextColor="#888" secureTextEntry />
         <TouchableOpacity style={styles.btnPrimary} onPress={() => navigation.replace('Main')}>
@@ -32,7 +37,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d0d0d', padding: 24 },
   label: { position: 'absolute', left: 24, fontSize: 14, color: '#888' },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 48 },
-  logo: { fontSize: 24, fontWeight: '600', color: '#00ff7f', marginBottom: 32 },
+  logo: { height: 140, width: 220, maxWidth: '90%', marginBottom: 32 },
   input: { backgroundColor: '#333', color: '#e0e0e0', borderRadius: 12, padding: 14, width: '100%', maxWidth: 320, marginBottom: 16, fontSize: 16 },
   btnPrimary: { backgroundColor: '#00a0a0', borderRadius: 12, padding: 14, width: '100%', maxWidth: 320, alignItems: 'center', marginTop: 8 },
   btnSecondary: { backgroundColor: '#555', borderRadius: 12, padding: 14, width: '100%', maxWidth: 320, alignItems: 'center', marginTop: 8 },

@@ -40,7 +40,12 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
-        <Text style={styles.brand}>StructSure</Text>
+        <Image
+          source={require('../assets/StructSure-Logo-Horizontal.png')}
+          style={styles.brandLogo}
+          resizeMode="contain"
+          accessibilityLabel="StructSure"
+        />
         <TouchableOpacity style={styles.profileBtn} activeOpacity={0.7}>
           <Image source={DEFAULT_USER.photo ? { uri: DEFAULT_USER.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
         </TouchableOpacity>
@@ -67,7 +72,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
   },
-  brand: { fontSize: 18, fontWeight: '600', color: '#fff' },
+  brandLogo: { height: 28, width: 168, maxWidth: '58%' },
   profileBtn: { padding: 4 },
   profilePic: { width: 36, height: 36, borderRadius: 18 },
   profilePicPlaceholder: {

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 
@@ -16,7 +16,12 @@ export default function LoadingScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Text style={[styles.label, { top: 48 + insets.top }]}>loading</Text>
       <View style={styles.logoWrap}>
-        <Text style={styles.logoText}>StructSure</Text>
+        <Image
+          source={require('../assets/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="StructSure"
+        />
       </View>
     </View>
   )
@@ -41,9 +46,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoText: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#00ff7f',
-  },
+  logo: { height: 180, width: 240, maxWidth: '88%' },
 })

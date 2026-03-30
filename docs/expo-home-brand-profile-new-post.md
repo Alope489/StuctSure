@@ -2,8 +2,8 @@
 
 ## Brand assets
 
-- **Home top-left:** `ExpoApp/assets/StructSure-Logo-Horizontal.png` — horizontal sandcastle + wordmark used in `HomeScreen` (`resizeMode: 'contain'`, fixed height).
-- **General / legacy:** `ExpoApp/assets/logo.png` — former `logo-horizontal.png` copy of `Project/public/logo.png` (rename only; use the StructSure horizontal asset for the app bar).
+- **Horizontal (`StructSure-Logo-Horizontal.png`):** top bar on **Home**, **Notifications**, and **Profile** (including the full-screen post modal header). Same sizing pattern as Home (`resizeMode: 'contain'`, ~28px height).
+- **Stacked / vertical (`logo.png`):** **Loading**, **Login**, and **Signup** — centered hero mark (`resizeMode: 'contain'`).
 
 ## Profile navigation from posts
 

@@ -221,7 +221,14 @@ export default function ProfileScreen() {
         ) : (
           <View style={styles.topbarSide} />
         )}
-        <Text style={styles.brand}>StructSure</Text>
+        <View style={styles.brandMarkWrap}>
+          <Image
+            source={require('../assets/StructSure-Logo-Horizontal.png')}
+            style={styles.brandMark}
+            resizeMode="contain"
+            accessibilityLabel="StructSure"
+          />
+        </View>
         {isOwnProfile ? (
           <TouchableOpacity style={styles.settingsBtn} onPress={handleSettingsPress} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <Ionicons name="settings-outline" size={24} color="#888" />
@@ -283,7 +290,12 @@ export default function ProfileScreen() {
       <Modal visible={!!selectedPostId} transparent animationType="fade" statusBarTranslucent>
         <View style={[styles.fullScreenModal, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
           <View style={styles.modalHeader}>
-            <Text style={styles.brand}>StructSure</Text>
+            <Image
+              source={require('../assets/StructSure-Logo-Horizontal.png')}
+              style={styles.modalBrandMark}
+              resizeMode="contain"
+              accessibilityLabel="StructSure"
+            />
             <TouchableOpacity onPress={() => { setSelectedPostId(null); setCommentInput('') }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Ionicons name="close" size={28} color="#e0e0e0" />
             </TouchableOpacity>
@@ -347,7 +359,9 @@ const styles = StyleSheet.create({
   },
   topbarSide: { width: 40, height: 40 },
   profileBackBtn: { width: 40, height: 40, justifyContent: 'center' },
-  brand: { fontSize: 18, fontWeight: '600', color: '#e0e0e0', flex: 1, textAlign: 'center' },
+  brandMarkWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  brandMark: { height: 28, width: 168, maxWidth: '70%' },
+  modalBrandMark: { height: 26, width: 152, flexShrink: 0 },
   settingsBtn: { padding: 4 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
