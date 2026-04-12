@@ -21,6 +21,7 @@ export default function ProfileScreen() {
   const selfName = user?.username || 'johndoe'
   const displayUsername = profileUsername ?? selfName
   const isOwnProfile = displayUsername === selfName
+  const otherProfilePhoto = isOwnProfile ? null : posts.find((p) => p.author === displayUsername && p.authorPhoto)?.authorPhoto || null
 
   const handleSettingsPress = () => {
     showThemedDialog({
@@ -81,6 +82,8 @@ export default function ProfileScreen() {
           <View style={styles.profilePicWrap}>
             {isOwnProfile ? (
               <Image source={user.photo ? { uri: user.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
+            ) : otherProfilePhoto ? (
+              <Image source={{ uri: otherProfilePhoto }} style={styles.profilePic} />
             ) : (
               <View style={[styles.profilePic, styles.profilePicOther]}>
                 <Text style={styles.profilePicOtherText}>{displayUsername.trim().slice(0, 1).toUpperCase()}</Text>

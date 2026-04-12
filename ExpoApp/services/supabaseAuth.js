@@ -1,8 +1,54 @@
-import { HAS_SUPABASE_CONFIG } from './config'
+import { HAS_SUPABASE_CONFIG, SUPABASE_POST_IMAGES_BUCKET } from './config'
 import { createRequestError } from './requestErrors'
 import { getSupabaseClient } from './supabaseClient'
 
 const deriveUsername = (email) => (email || '').split('@')[0] || `user-${Date.now()}`
+const isRemoteUrl = (value) => /^https?:\/\//i.test(value || '')
+const contentTypeFromUri = (uri) =>
+  ({
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    heic: 'image/heic',
+    heif: 'image/heif',
+  }[(uri?.split('.').pop()?.split('?')?.[0] || '').toLowerCase()] || 'image/jpeg')
+
+const localUriToArrayBuffer = (uri) =>
+  new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.onerror = () => reject(new Error('Could not read profile image bytes from local URI.'))
+    xhr.onload = () => resolve(xhr.response)
+    xhr.responseType = 'arraybuffer'
+    xhr.open('GET', uri, true)
+    xhr.send(null)
+  })
+
+async function toPersistentAvatarUrl(userId, photo) {
+  if (!photo) return null
+  if (isRemoteUrl(photo)) return photo
+  const extension = (photo?.split('.').pop()?.split('?')?.[0] || 'jpg').toLowerCase()
+  const filePath = `${userId}/profile/avatar-${Date.now()}.${extension}`
+  const { error } = await getSupabaseClient().storage.from(SUPABASE_POST_IMAGES_BUCKET).upload(
+    filePath,
+    await (async () => {
+      try {
+        return await (await fetch(photo)).arrayBuffer()
+      } catch (_unusedError) {
+        return localUriToArrayBuffer(photo)
+      }
+    })(),
+    { upsert: true, contentType: contentTypeFromUri(photo) }
+  )
+  if (error)
+    throw createRequestError({
+      message: error.message || 'Could not upload profile image.',
+      code: error.statusCode ? `STORAGE_${error.statusCode}` : 'PROFILE_IMAGE_UPLOAD_FAILED',
+      retryable: false,
+      operation: 'toPersistentAvatarUrl',
+    })
+  return getSupabaseClient().storage.from(SUPABASE_POST_IMAGES_BUCKET).getPublicUrl(filePath).data.publicUrl
+}
 
 const toPublicUser = (authUser, profile) => ({
   id: authUser?.id || '',
@@ -73,13 +119,14 @@ export async function updateSupabaseProfile({ username, photo } = {}) {
   if (error) throw createRequestError({ message: error.message || 'Auth check failed.', code: error.status ? `AUTH_${error.status}` : 'AUTH_CHECK_FAILED', retryable: false, operation: 'updateSupabaseProfileAuth' })
   if (!data?.user?.id) throw createRequestError({ message: 'You must be logged in.', code: 'AUTH_REQUIRED', retryable: false, operation: 'updateSupabaseProfileAuth' })
   const profile = await getProfileById(data.user.id)
+  const avatarUrl = await toPersistentAvatarUrl(data.user.id, photo ?? profile?.avatar_url ?? null)
   const { data: updated, error: upsertError } = await getSupabaseClient()
     .from('profiles')
     .upsert(
       {
         id: data.user.id,
         username: (username || '').trim() || profile?.username || deriveUsername(data.user.email),
-        avatar_url: photo ?? profile?.avatar_url ?? null,
+        avatar_url: avatarUrl,
       },
       { onConflict: 'id' }
     )

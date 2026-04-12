@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import { AccountSidePanel } from '../components/AccountSidePanel'
+import { getResolutionStatus } from '../data/posts'
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets()
@@ -19,6 +20,9 @@ export default function NotificationsScreen() {
           .map((post) => ({
             id: `${post.id}-upvotes`,
             kind: 'upvote',
+            postId: post.id,
+            buildingId: post.buildingId || null,
+            postTab: getResolutionStatus(post),
             count: Number(post.likes || 0),
             title: post.title || 'Untitled report',
             time: post.time || 'Recently',
@@ -28,6 +32,9 @@ export default function NotificationsScreen() {
           .map((post) => ({
             id: `${post.id}-comments`,
             kind: 'comment',
+            postId: post.id,
+            buildingId: post.buildingId || null,
+            postTab: getResolutionStatus(post),
             count: Number(post.comments || 0),
             title: post.title || 'Untitled report',
             time: post.time || 'Recently',
@@ -35,6 +42,28 @@ export default function NotificationsScreen() {
       ].sort((a, b) => b.count - a.count),
     [posts, user?.username]
   )
+
+  const openNotificationPost = (item) => {
+    if (!item?.postId) return
+    if (item.buildingId) {
+      navigation.navigate('Search', {
+        screen: 'SearchPosts',
+        params: {
+          buildingId: item.buildingId,
+          postTab: item.postTab === 'resolved' ? 'resolved' : 'unresolved',
+          initialPostId: item.postId,
+        },
+      })
+      return
+    }
+    navigation.navigate('Profile', {
+      screen: 'ProfilePosts',
+      params: {
+        profileUsername: user?.username || 'johndoe',
+        initialPostId: item.postId,
+      },
+    })
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -76,7 +105,7 @@ export default function NotificationsScreen() {
           </View>
         ) : (
           activityNotifications.map((item) => (
-            <View key={item.id} style={styles.notificationCard}>
+            <TouchableOpacity key={item.id} style={styles.notificationCard} activeOpacity={0.75} onPress={() => openNotificationPost(item)}>
               <View style={[styles.notificationIconWrap, item.kind === 'comment' && styles.notificationIconWrapComment]}>
                 <Ionicons
                   name={item.kind === 'comment' ? 'chatbubble-outline' : 'arrow-up'}
@@ -99,7 +128,7 @@ export default function NotificationsScreen() {
                 </Text>
                 <Text style={styles.notificationTime}>{item.time}</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>

@@ -70,7 +70,11 @@ export function PostCard({
           disabled={!onAuthorPress}
         >
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
+            {post.authorPhoto ? (
+              <Image source={{ uri: post.authorPhoto }} style={styles.avatarImg} />
+            ) : (
+              <Text style={styles.avatarText}>{initial}</Text>
+            )}
           </View>
           <View style={styles.meta}>
             <Text style={styles.author}>{post.author}</Text>
@@ -190,7 +194,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+    overflow: 'hidden',
   },
+  avatarImg: { width: '100%', height: '100%' },
   avatarText: { color: '#e0e0e0', fontWeight: '700' },
   meta: {},
   author: { fontSize: 14, fontWeight: '600', color: '#e0e0e0' },

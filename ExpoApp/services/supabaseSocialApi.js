@@ -42,6 +42,7 @@ const mapPostRow = (row) => ({
   issueId: row?.id || null,
   misskeyNoteId: null,
   author: row?.profiles?.username || 'unknown',
+  authorPhoto: row?.profiles?.avatar_url || null,
   time: toRelativeTime(row?.created_at),
   sortOrder: 0,
   title: row?.title || 'Report',
@@ -63,6 +64,7 @@ const mapPostRow = (row) => ({
 const mapCommentRow = (row) => ({
   id: row?.id || `c-${Date.now()}`,
   author: row?.profiles?.username || 'unknown',
+  authorPhoto: row?.profiles?.avatar_url || null,
   text: row?.text || '',
   time: toRelativeTime(row?.created_at),
   createdAt: row?.created_at || null,
@@ -100,7 +102,7 @@ async function getHydratedPost(postId) {
       latitude,
       longitude,
       created_at,
-      profiles!posts_author_id_fkey(username),
+      profiles!posts_author_id_fkey(username, avatar_url),
       post_images(public_url, sort_order),
       comments(count),
       upvotes(count)
@@ -147,7 +149,7 @@ export async function getSupabaseFeed() {
       latitude,
       longitude,
       created_at,
-      profiles!posts_author_id_fkey(username),
+      profiles!posts_author_id_fkey(username, avatar_url),
       post_images(public_url, sort_order),
       comments(count),
       upvotes(count)
@@ -221,7 +223,7 @@ export async function updateSupabaseResolution(postId, resolutionStatus) {
 export async function getSupabaseComments(postId) {
   const { data, error } = await getSupabaseClient()
     .from('comments')
-    .select('id, text, created_at, profiles!comments_author_id_fkey(username)')
+    .select('id, text, created_at, profiles!comments_author_id_fkey(username, avatar_url)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
   if (error) throw createRequestError({ message: error.message || 'Failed to load comments.', code: error.code || 'COMMENTS_FETCH_FAILED', retryable: false, operation: 'getSupabaseComments' })
@@ -230,7 +232,7 @@ export async function getSupabaseComments(postId) {
 
 export async function addSupabaseComment(postId, text) {
   const user = await getCurrentAuthUser()
-  const { data, error } = await getSupabaseClient().from('comments').insert({ post_id: postId, author_id: user.id, text }).select('id, text, created_at, profiles!comments_author_id_fkey(username)').single()
+  const { data, error } = await getSupabaseClient().from('comments').insert({ post_id: postId, author_id: user.id, text }).select('id, text, created_at, profiles!comments_author_id_fkey(username, avatar_url)').single()
   if (error) throw createRequestError({ message: error.message || 'Failed to add comment.', code: error.code || 'COMMENT_CREATE_FAILED', retryable: false, operation: 'addSupabaseComment' })
   return mapCommentRow(data)
 }

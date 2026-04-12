@@ -84,6 +84,16 @@ export default function FilteredPostsScreen({ mode }) {
     setCommentsOpenForPostId(null)
     setCommentInput('')
   }
+  const confirmDeleteComment = (postId, commentId) => {
+    showThemedDialog({
+      title: 'Delete comment?',
+      message: 'Are you sure you want to delete this comment?',
+      buttons: [
+        { text: 'Cancel', style: 'cancel', onPress: () => {} },
+        { text: 'Delete', onPress: () => deleteComment(postId, commentId) },
+      ],
+    })
+  }
   const handleAddComment = async () => {
     if (!commentsOpenForPostId || !commentInput.trim()) return
     await addComment(commentsOpenForPostId, { text: commentInput.trim(), time: 'Just now' })
@@ -240,16 +250,29 @@ export default function FilteredPostsScreen({ mode }) {
                     {operationErrors.comments ? <Text style={styles.commentError}>{operationErrors.comments}</Text> : null}
                     {(commentsByPost[commentsOpenForPostId] || []).map((comment) => (
                       <View key={comment.id} style={styles.commentItem}>
-                        <View style={styles.commentRowHead}>
-                          <Text style={styles.commentAuthor}>{comment.author}</Text>
-                          {comment.author === (user?.username || 'johndoe') ? (
-                            <TouchableOpacity onPress={() => deleteComment(commentsOpenForPostId, comment.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                              <Ionicons name="trash-outline" size={16} color="#888" />
-                            </TouchableOpacity>
-                          ) : null}
+                        <View style={styles.commentTopRow}>
+                          <View style={styles.commentAvatar}>
+                            {comment.authorPhoto ? (
+                              <Image source={{ uri: comment.authorPhoto }} style={styles.commentAvatarImg} />
+                            ) : (
+                              <Text style={styles.commentAvatarText}>
+                                {(comment.author || '?').trim().slice(0, 1).toUpperCase()}
+                              </Text>
+                            )}
+                          </View>
+                          <View style={styles.commentBody}>
+                            <View style={styles.commentRowHead}>
+                              <Text style={styles.commentAuthor}>{comment.author}</Text>
+                              {comment.author === (user?.username || 'johndoe') ? (
+                                <TouchableOpacity onPress={() => confirmDeleteComment(commentsOpenForPostId, comment.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                  <Ionicons name="trash-outline" size={16} color="#888" />
+                                </TouchableOpacity>
+                              ) : null}
+                            </View>
+                            <Text style={styles.commentText}>{comment.text}</Text>
+                            <Text style={styles.commentTime}>{comment.time}</Text>
+                          </View>
                         </View>
-                        <Text style={styles.commentText}>{comment.text}</Text>
-                        <Text style={styles.commentTime}>{comment.time}</Text>
                       </View>
                     ))}
                   </ScrollView>
@@ -291,18 +314,32 @@ const styles = StyleSheet.create({
   postFeedContentEmpty: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 24 },
   commentModalOverlay: { flex: 1, justifyContent: 'flex-end' },
   commentModalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
-  commentModalPanel: { backgroundColor: '#0d0d0d', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%', paddingHorizontal: 16 },
+  commentModalPanel: { backgroundColor: '#0d0d0d', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '100%', paddingHorizontal: 16 },
   commentModalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', alignSelf: 'center', marginTop: 12, marginBottom: 8 },
   commentModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   commentModalTitle: { fontSize: 18, fontWeight: '600', color: '#e0e0e0' },
   commentModalPostPreview: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   commentModalPostAuthor: { fontSize: 14, fontWeight: '600', color: '#00ff7f', marginBottom: 4 },
   commentModalPostTitle: { fontSize: 13, color: 'rgba(224,224,224,0.8)' },
-  commentList: { maxHeight: 420 },
+  commentList: { flex: 1 },
   commentListContent: { paddingVertical: 12, paddingBottom: 20 },
   commentMeta: { color: '#888', marginBottom: 8 },
   commentError: { color: '#ff7d7d', marginBottom: 8 },
   commentItem: { marginBottom: 16 },
+  commentTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  commentAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,255,127,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    marginTop: 2,
+  },
+  commentAvatarImg: { width: '100%', height: '100%' },
+  commentAvatarText: { color: '#e0e0e0', fontWeight: '700', fontSize: 12 },
+  commentBody: { flex: 1 },
   commentRowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   commentAuthor: { fontSize: 14, fontWeight: '600', color: '#e0e0e0', marginBottom: 4 },
   commentText: { fontSize: 14, color: 'rgba(224,224,224,0.9)', lineHeight: 20 },

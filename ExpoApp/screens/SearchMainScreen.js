@@ -27,13 +27,22 @@ function BuildingProfileCircle({ uri, size }) {
   )
 }
 
-function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, buildings }) {
+function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, buildings, posts }) {
   const insets = useSafeAreaInsets()
-  const filtered = buildings.filter(
-    (b) =>
-      b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.address.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const q = searchQuery.trim().toLowerCase()
+  const filtered = buildings
+    .map((b) => ({
+      building: b,
+      tagMatches: posts
+        .filter((p) => p.buildingId === b.id)
+        .flatMap((p) => getPostCategoryTags(p))
+        .filter((tag, idx, all) => all.indexOf(tag) === idx)
+        .filter((tag) => tag.toLowerCase().includes(q)),
+    }))
+    .filter(
+      ({ building, tagMatches }) =>
+        building.name.toLowerCase().includes(q) || building.address.toLowerCase().includes(q) || tagMatches.length > 0
+    )
 
   return (
     <View style={styles.mapContainer}>
@@ -41,7 +50,7 @@ function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, building
         <Ionicons name="search" size={20} color="#888" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search"
+          placeholder="Search buildings or tags"
           placeholderTextColor="#666"
           value={searchQuery}
           onChangeText={onSearchChange}
@@ -55,17 +64,24 @@ function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, building
       {searchQuery.length > 0 && (
         <View style={styles.searchResultsOverlay}>
           <ScrollView style={styles.searchResultsScroll} keyboardShouldPersistTaps="handled">
-            {filtered.map((b) => (
+            {filtered.map(({ building, tagMatches }) => (
               <TouchableOpacity
-                key={b.id}
+                key={building.id}
                 style={styles.searchResultItem}
-                onPress={() => onBuildingSelect(b)}
+                onPress={() => onBuildingSelect(building)}
                 activeOpacity={0.7}
               >
-                <BuildingProfileCircle uri={b.image} size={48} />
+                <BuildingProfileCircle uri={building.image} size={48} />
                 <View style={styles.searchResultText}>
-                  <Text style={styles.searchResultName}>{b.name}</Text>
-                  <Text style={styles.searchResultAddress}>{b.address}</Text>
+                  <Text style={styles.searchResultName}>{building.name}</Text>
+                  <Text style={styles.searchResultAddress}>{building.address}</Text>
+                  {tagMatches.length ? (
+                    <Text style={styles.searchResultTags}>
+                      {tagMatches.length === 1
+                        ? `Tag match: ${tagMatches[0]}`
+                        : `Tag matches: ${tagMatches.slice(0, 2).join(', ')}`}
+                    </Text>
+                  ) : null}
                 </View>
               </TouchableOpacity>
             ))}
@@ -287,6 +303,7 @@ export default function SearchMainScreen() {
       onSearchChange={setSearchQuery}
       onBuildingSelect={handleBuildingSelect}
       buildings={buildings}
+      posts={posts}
     />
   )
 }
@@ -339,6 +356,7 @@ const styles = StyleSheet.create({
   searchResultText: { flex: 1 },
   searchResultName: { fontSize: 15, fontWeight: '600', color: '#e0e0e0', marginBottom: 2 },
   searchResultAddress: { fontSize: 12, color: '#888' },
+  searchResultTags: { fontSize: 12, color: '#00ff7f', marginTop: 4 },
   searchResultEmpty: { padding: 20, color: '#666', textAlign: 'center' },
 
   detailScroll: { flex: 1, backgroundColor: '#0d0d0d' },

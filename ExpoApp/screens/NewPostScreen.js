@@ -47,6 +47,27 @@ const categories = [
   { id: 'maint', label: 'maintenance / wear' },
 ]
 
+function residentialAddressLine(placemark) {
+  return [
+    [placemark?.streetNumber, placemark?.street].filter(Boolean).join(' ').trim(),
+    placemark?.city || placemark?.district || placemark?.subregion,
+    placemark?.region,
+    placemark?.postalCode,
+  ]
+    .filter(Boolean)
+    .join(', ')
+}
+
+function residentialBuildingId(addressLine, lat, lon) {
+  if (addressLine)
+    return `residential-${addressLine
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80)}`
+  return `residential-${Number(lat).toFixed(5)}-${Number(lon).toFixed(5)}`
+}
+
 export default function NewPostScreen() {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
@@ -69,6 +90,27 @@ export default function NewPostScreen() {
   const [cameraReady, setCameraReady] = useState(false)
   const cameraRef = useRef(null)
 
+  const resetComposer = () => {
+    setPostTitle('')
+    setCaption('')
+    setCapturedPhoto(null)
+    setGpsCoords(null)
+    setNearbyOptions([])
+    setNearbyLoading(false)
+    setNearbyError(null)
+    setLinkedBuilding(null)
+    setResolutionStatus(null)
+    setSelected(new Set(['structural']))
+    setSeverity(5)
+    setUsedResidentialFallback(false)
+    setCreatingPost(false)
+  }
+
+  const resetAndLeave = () => {
+    resetComposer()
+    leaveNewPost(navigation)
+  }
+
   useEffect(() => {
     if (!gpsCoords || !capturedPhoto) return undefined
     const ac = new AbortController()
@@ -89,17 +131,23 @@ export default function NewPostScreen() {
               {
                 text: 'No, cancel post',
                 style: 'destructive',
-                onPress: () => leaveNewPost(navigation),
+                onPress: () => resetAndLeave(),
               },
               {
                 text: 'Yes, use current location',
                 style: 'default',
-                onPress: () => {
+                onPress: async () => {
+                  const addressLine = await Location.reverseGeocodeAsync({
+                    latitude: gpsCoords.latitude,
+                    longitude: gpsCoords.longitude,
+                  })
+                    .then((rows) => residentialAddressLine((rows || [])[0]))
+                    .catch(() => '')
                   setUsedResidentialFallback(true)
                   setLinkedBuilding({
-                    id: `residential-${Date.now()}`,
-                    name: 'Residential housing',
-                    addressLine: '',
+                    id: residentialBuildingId(addressLine, gpsCoords.latitude, gpsCoords.longitude),
+                    name: addressLine || 'Residential housing',
+                    addressLine,
                     lat: gpsCoords.latitude,
                     lon: gpsCoords.longitude,
                     rawType: 'residential',
@@ -132,7 +180,18 @@ export default function NewPostScreen() {
   const capturePhoto = async () => {
     if (!cameraRef.current || !cameraReady) return
     try {
-      await Location.requestForegroundPermissionsAsync()
+      if ((await Location.requestForegroundPermissionsAsync()).status !== 'granted') {
+        showThemedDialog({
+          title: 'Location required',
+          message:
+            'Location access is required to link the post to a nearby building. You can allow location and try again, or discard this draft.',
+          buttons: [
+            { text: 'Keep editing', style: 'cancel', onPress: () => {} },
+            { text: 'Discard', onPress: () => resetAndLeave() },
+          ],
+        })
+        return
+      }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
       setGpsCoords(loc.coords)
 
@@ -159,7 +218,7 @@ export default function NewPostScreen() {
       message: 'Your post will not be saved. Do you want to discard it?',
       buttons: [
         { text: 'Keep editing', style: 'cancel', onPress: () => {} },
-        { text: 'Discard', style: 'destructive', onPress: () => leaveNewPost(navigation) },
+        { text: 'Discard', style: 'destructive', onPress: () => resetAndLeave() },
       ],
     })
   }
@@ -188,17 +247,7 @@ export default function NewPostScreen() {
         resolutionStatus,
         severity: Math.round(severity),
       })
-      setPostTitle('')
-      setCaption('')
-      setCapturedPhoto(null)
-      setGpsCoords(null)
-      setNearbyOptions([])
-      setNearbyError(null)
-      setLinkedBuilding(null)
-      setResolutionStatus(null)
-      setSelected(new Set(['structural']))
-      setSeverity(5)
-      setUsedResidentialFallback(false)
+      resetComposer()
       navigation.navigate('Home')
     } catch (error) {
       setNearbyError(error.message || 'Failed to create post.')
@@ -225,7 +274,7 @@ export default function NewPostScreen() {
     <View style={styles.container}>
       <View style={[styles.topbar, { paddingTop: 14 + insets.top }]}>
         <TouchableOpacity
-          onPress={() => (caption || postTitle.trim() || capturedPhoto ? handleCancel() : leaveNewPost(navigation))}
+          onPress={() => (caption || postTitle.trim() || capturedPhoto ? handleCancel() : resetAndLeave())}
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
