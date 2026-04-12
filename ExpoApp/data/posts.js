@@ -17,7 +17,7 @@ export const johndoePosts = [
     body: 'Location: Downtown Miami high-rise\nAddress: 1101 Brickell Ave area\nVisited: Today\n\nLarge water stain and crack in the ceiling. Paint is peeling in several spots. Leak appears to be from above. Needs inspection.',
     likes: 124,
     comments: 38,
-    images: [require('../assets/johndoe-damage1.png')],
+    images: [require('../assets/johndoe-damage2.png')],
     buildingId: 'b1',
   },
   {
@@ -49,7 +49,7 @@ export const johndoePosts = [
     body: 'Location: Residential basement/garage\nAddress: University Park area\nVisited: 3 days ago\n\nLarge branching crack in painted concrete floor. Support pole at junction. Possible settling issue. PVC plumbing and storage nearby.',
     likes: 67,
     comments: 15,
-    images: [require('../assets/johndoe-damage3.png')],
+    images: [require('../assets/johndoe-damage2.png')],
     buildingId: 'b3',
   },
 ]
@@ -172,28 +172,15 @@ export const otherPosts = [
   },
 ]
 
-export const allPosts = [...johndoePosts, ...otherPosts].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
+export const allPosts = [johndoePosts[0], otherPosts[0]].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
 
 export const initialCommentsByPost = {
   jd1: [
     { id: 'c1', author: 'Alex T.', text: 'That ceiling leak looks serious. Have you contacted management?', time: '1h' },
   ],
-  jd2: [
-    { id: 'c2', author: 'Sam R.', text: 'Same thing happened in my unit last year. Took weeks to fix.', time: '5h' },
-  ],
-  jd3: [
-    { id: 'c3', author: 'Maya C.', text: 'Crack by the column is concerning. Could be structural.', time: '2d' },
-  ],
   '4': [
     { id: 'c4', author: 'Alex Turner', text: 'I passed by there last week. Definitely getting worse.', time: '45m' },
     { id: 'c5', author: 'Sam Rivera', text: 'Reported to building management. Thanks for flagging!', time: '2h' },
-  ],
-  '5': [
-    { id: 'c6', author: 'Jordan K.', text: 'That window has been like that for months. Safety hazard for sure.', time: '1h' },
-  ],
-  '6': [
-    { id: 'c7', author: 'Maya Chen', text: 'Same smell in stairwell C. Could be a bigger drainage issue.', time: '3h' },
-    { id: 'c8', author: 'Dev Patel', text: 'They really need to inspect the whole garage.', time: '5h' },
   ],
 }
 

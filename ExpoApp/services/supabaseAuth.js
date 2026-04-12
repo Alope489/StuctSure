@@ -1,0 +1,74 @@
+import { HAS_SUPABASE_CONFIG } from './config'
+import { createRequestError } from './requestErrors'
+import { getSupabaseClient } from './supabaseClient'
+
+const deriveUsername = (email) => (email || '').split('@')[0] || `user-${Date.now()}`
+
+const toPublicUser = (authUser, profile) => ({
+  id: authUser?.id || '',
+  username: profile?.username || deriveUsername(authUser?.email),
+  email: authUser?.email || '',
+  photo: profile?.avatar_url || null,
+  host: null,
+})
+
+async function getProfileById(userId) {
+  if (!userId) return null
+  const { data, error } = await getSupabaseClient().from('profiles').select('id, username, avatar_url').eq('id', userId).maybeSingle()
+  if (error && error.code !== 'PGRST116') throw createRequestError({ message: error.message || 'Could not load profile.', code: error.code || 'PROFILE_FETCH_FAILED', retryable: false, operation: 'getProfileById' })
+  return data || null
+}
+
+async function ensureProfile(authUser, requestedUsername) {
+  if (!authUser?.id) return null
+  const username = (requestedUsername || '').trim() || deriveUsername(authUser.email)
+  const { data, error } = await getSupabaseClient()
+    .from('profiles')
+    .upsert({ id: authUser.id, username }, { onConflict: 'id' })
+    .select('id, username, avatar_url')
+    .single()
+  if (error) throw createRequestError({ message: error.message || 'Could not save profile.', code: error.code || 'PROFILE_UPSERT_FAILED', retryable: false, operation: 'ensureProfile' })
+  return data
+}
+
+async function toSessionPayload(session, requestedUsername) {
+  if (!session?.user || !session?.access_token) return null
+  const profile = requestedUsername ? await ensureProfile(session.user, requestedUsername) : await getProfileById(session.user.id)
+  return { token: session.access_token, user: toPublicUser(session.user, profile), connectedAt: Date.now() }
+}
+
+export function hasSupabaseConfigured() {
+  return HAS_SUPABASE_CONFIG
+}
+
+export async function signInWithSupabase(email, password) {
+  if (!HAS_SUPABASE_CONFIG) throw new Error('Supabase is not configured.')
+  const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email: email.trim(), password })
+  if (error) throw createRequestError({ message: error.message || 'Login failed.', code: error.status ? `AUTH_${error.status}` : 'AUTH_LOGIN_FAILED', retryable: false, operation: 'signInWithSupabase' })
+  const payload = await toSessionPayload(data?.session, null)
+  if (payload) return payload
+  throw new Error('Login succeeded, but no active session was returned.')
+}
+
+export async function signUpWithSupabase(email, password, username) {
+  if (!HAS_SUPABASE_CONFIG) throw new Error('Supabase is not configured.')
+  const { data, error } = await getSupabaseClient().auth.signUp({ email: email.trim(), password, options: { data: { username: (username || '').trim() || deriveUsername(email) } } })
+  if (error) throw createRequestError({ message: error.message || 'Signup failed.', code: error.status ? `AUTH_${error.status}` : 'AUTH_SIGNUP_FAILED', retryable: false, operation: 'signUpWithSupabase' })
+  if (!data?.session) throw new Error('Signup submitted. If email confirmation is enabled, confirm your email before logging in.')
+  const payload = await toSessionPayload(data.session, username)
+  if (payload) return payload
+  throw new Error('Signup succeeded, but no active session was returned.')
+}
+
+export async function restoreSupabaseSession() {
+  if (!HAS_SUPABASE_CONFIG) return null
+  const { data, error } = await getSupabaseClient().auth.getSession()
+  if (error) throw createRequestError({ message: error.message || 'Failed to restore session.', code: error.status ? `AUTH_${error.status}` : 'AUTH_RESTORE_FAILED', retryable: false, operation: 'restoreSupabaseSession' })
+  return toSessionPayload(data?.session, null)
+}
+
+export async function signOutSupabase() {
+  if (!HAS_SUPABASE_CONFIG) return
+  const { error } = await getSupabaseClient().auth.signOut()
+  if (error) throw createRequestError({ message: error.message || 'Sign-out failed.', code: error.status ? `AUTH_${error.status}` : 'AUTH_SIGNOUT_FAILED', retryable: false, operation: 'signOutSupabase' })
+}

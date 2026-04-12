@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useScrollToTop } from '@react-navigation/native'
+import { useFocusEffect, useScrollToTop } from '@react-navigation/native'
 import { useApp } from '../context/AppContext'
 import { useThemedDialog } from '../context/ThemedDialogContext'
 import { PostCard } from '../components/PostCard'
@@ -24,7 +24,35 @@ export default function HomeScreen({ navigation }) {
     deletePost,
     updatePostResolution,
     getDisplayCommentCount,
+    refreshPosts,
+    feedLoading,
+    lastError,
+    loadCommentsForPost,
+    commentLoadingPostId,
+    operationErrors,
+    hasAuthConfigured,
+    sessionToken,
+    authReady,
   } = useApp()
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [commentsOpenForPostId, setCommentsOpenForPostId] = useState(null)
+  const [commentInput, setCommentInput] = useState('')
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshPosts()
+    }, [refreshPosts])
+  )
+
+  useEffect(() => {
+    if (commentsOpenForPostId) loadCommentsForPost(commentsOpenForPostId)
+  }, [commentsOpenForPostId, loadCommentsForPost])
+  useEffect(() => {
+    if (!hasAuthConfigured || sessionToken || !authReady) return
+    const parent = navigation.getParent?.()
+    if (parent) parent.navigate('Login')
+    else navigation.navigate('Login')
+  }, [authReady, hasAuthConfigured, navigation, sessionToken])
 
   const handlePostMenu = (post) => {
     const isOwn = post.author === (user?.username || 'johndoe')
@@ -81,13 +109,10 @@ export default function HomeScreen({ navigation }) {
       })
     }
   }
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [commentsOpenForPostId, setCommentsOpenForPostId] = useState(null)
-  const [commentInput, setCommentInput] = useState('')
-
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!commentsOpenForPostId || !commentInput.trim()) return
-    addComment(commentsOpenForPostId, { text: commentInput.trim(), time: 'Just now' })
+    await addComment(commentsOpenForPostId, { text: commentInput.trim(), time: 'Just now' })
+    await loadCommentsForPost(commentsOpenForPostId)
     setCommentInput('')
   }
 
@@ -111,6 +136,8 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
       <ScrollView ref={scrollRef} style={styles.feed} contentContainerStyle={styles.feedContent}>
+        {feedLoading ? <ActivityIndicator color="#00ff7f" style={styles.feedLoading} /> : null}
+        {lastError ? <Text style={styles.errorText}>{lastError}</Text> : null}
         {posts.map((p) => (
           <PostCard
             key={p.id}
@@ -173,6 +200,8 @@ export default function HomeScreen({ navigation }) {
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                   >
+                    {commentLoadingPostId === commentsOpenForPostId ? <ActivityIndicator color="#00ff7f" style={styles.commentLoading} /> : null}
+                    {operationErrors.comments ? <Text style={styles.commentError}>{operationErrors.comments}</Text> : null}
                     {(commentsByPost[commentsOpenForPostId] || []).map((c) => (
                       <View key={c.id} style={styles.commentItem}>
                         <Text style={styles.commentAuthor}>{c.author}</Text>
@@ -220,6 +249,8 @@ const styles = StyleSheet.create({
   profilePic: { width: 40, height: 40, borderRadius: 20 },
   feed: { flex: 1 },
   feedContent: { padding: 14, gap: 14 },
+  feedLoading: { marginBottom: 12 },
+  errorText: { color: '#ff7d7d', marginBottom: 8 },
   commentModalOverlay: { flex: 1, justifyContent: 'flex-end' },
   commentModalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
   commentModalPanel: {
@@ -251,6 +282,8 @@ const styles = StyleSheet.create({
   commentModalPostAuthor: { fontSize: 14, fontWeight: '600', color: '#00ff7f', marginBottom: 4 },
   commentModalPostTitle: { fontSize: 13, color: 'rgba(224,224,224,0.8)' },
   commentList: { maxHeight: 280 },
+  commentLoading: { marginBottom: 10 },
+  commentError: { color: '#ff7d7d', marginBottom: 10 },
   commentListContent: { paddingVertical: 12, paddingBottom: 20 },
   commentItem: { marginBottom: 16 },
   commentAuthor: { fontSize: 14, fontWeight: '600', color: '#e0e0e0', marginBottom: 4 },
