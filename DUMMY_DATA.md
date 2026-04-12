@@ -1,17 +1,16 @@
 # StructSure — Dummy Data (Mock Nodes)
 
-This document describes all placeholder/dummy data used in the StructSure app for development and prototyping. These are **not** connected to a backend—they exist only in the frontend to populate the UI.
+This document describes placeholder/fallback data used in the StructSure app. The Expo app now supports Supabase integration, but keeps local fixtures for offline/demo mode when environment variables are not configured.
 
 ---
 
 ## 0. Post Node Schema (Dummy)
 
-All posts (feed + user-created) follow this structure. Used on **Expo Home**, **Expo Profile**, **Expo Search**, and the **web Home** mock feed.
+All posts (feed + user-created) follow this structure. Used on **Expo Home**, **Expo Profile**, and **Expo Search**.
 
 ### Location
 - **Expo seed data & helpers:** `ExpoApp/data/posts.js`
 - **Expo state & mutations:** `ExpoApp/context/AppContext.js`
-- **Web mock feed:** `Project/src/pages/Home.jsx` (`demoPosts` array)
 
 ### Schema (Expo posts)
 
@@ -75,32 +74,10 @@ New posts are kept in `AppContext` state only (no persistence); they appear on t
 
 ## 1. Demo Posts (`demoPosts`, `johndoePosts`, `otherPosts`, `allPosts`)
 
-Seed/demo posts are used in both the web app and Expo app.
+Seed/demo posts are used in the Expo app.
 
-### Locations
-- **Web:** `Project/src/pages/Home.jsx` — `demoPosts` constant (5 posts).
+### Location
 - **Expo data:** `ExpoApp/data/posts.js` — `johndoePosts`, `otherPosts`, `allPosts`.
-
-### Web schema (`demoPosts`)
-
-| Field    | Type   | Description                                         |
-|----------|--------|-----------------------------------------------------|
-| `id`     | string | Unique ID (e.g. `p1`)                               |
-| `author` | string | Display name of the post author                     |
-| `time`   | string | Human-readable timestamp                            |
-| `title`  | string | Post headline                                       |
-| `body`   | string | Full post text                                      |
-| `likes`  | number | Like count                                          |
-| `comments` | number | Comment count                                     |
-| `images` | array  | `{ url, alt }` objects pointing to Unsplash URLs   |
-
-The 5 demo posts correspond to:
-
-- `p1` — Exterior foundation crack at Riverside Plaza (Mia Chen).
-- `p2` — Cracked window at Cityline Bus Terminal (Jordan Rivera).
-- `p3` — Water damage/mold smell in parking garage stairwell (Ayesha Patel).
-- `p4` — Cracked concrete walkway outside Greenway Market (Noah Williams).
-- `p5` — Ceiling damage above table area at Brew & Bean Café (Jordan Rivera).
 
 ### Expo schema (`johndoePosts`, `otherPosts`)
 
@@ -109,20 +86,19 @@ Expo posts extend the base schema from section **0** and split into:
 - `johndoePosts` — 3 posts authored by `johndoe` with local images via `require('../assets/johndoe-damageX.png')`.
 - `otherPosts` — 3 posts authored by other users (`Mia Chen`, `Jordan Rivera`, `Ayesha Patel`) with remote Unsplash images (`{ uri }`).
 
-`allPosts` is a sorted array:
+`allPosts` is a sorted fallback array:
 
 ```js
-export const allPosts = [...johndoePosts, ...otherPosts].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
+export const allPosts = [johndoePosts[0], otherPosts[0]].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
 ```
 
 ---
 
 ## 2. Demo Notifications (`demoNotifications`)
 
-Used on the **Notifications** screen in both the web app and the Expo app.
+Used on the **Notifications** screen in the Expo app.
 
 ### Locations
-- **Web:** `Project/src/pages/Notifications.jsx` — `demoNotifications` constant.
 - **Expo:** `ExpoApp/screens/NotificationsScreen.js` — `demoNotifications` constant.
 
 ### Schema
@@ -135,7 +111,7 @@ Used on the **Notifications** screen in both the web app and the Expo app.
 | `time`   | string  | Relative timestamp (e.g. `24m`, `2h`, `2d`)    |
 | `unread` | boolean | Whether to show the green unread indicator     |
 
-The same 8 notifications are shared across web and Expo, e.g.:
+The same 8 notifications are used in Expo, e.g.:
 
 - `n1` — Jane Cooper — `OMG! 😱 ...` — `24m` — `unread: true`
 - `n2` — Jenny Wilson — `Upvoted your post` — `2h` — `unread: true`
@@ -145,11 +121,9 @@ The same 8 notifications are shared across web and Expo, e.g.:
 
 ## 3. Default User (`DEFAULT_USER`, `user` in AppContext)
 
-Used for the **profile avatar and settings** on the web Home screen, and as the current user in the Expo app.
+Used as the current user identity in the Expo app.
 
 ### Locations
-- **Web:** `Project/src/pages/Home.jsx` — `const DEFAULT_USER = { photo: null, username: 'johndoe', email: 'user@domain.com' }`.
-- **Web Notifications:** `Project/src/pages/Notifications.jsx` — `const DEFAULT_USER = { photo: null }` for the avatar only.
 - **Expo:** `ExpoApp/context/AppContext.js` — `user` state with at least `username`, `email`, and optional `photo`.
 
 ### Schema
@@ -169,7 +143,6 @@ In Expo, `user.photo` is `null` by default and is rendered as a static avatar im
 Used in the **New Post** screens to tag the type of issue.
 
 ### Locations
-- **Web:** `Project/src/pages/NewPost.jsx` (see inline `categories` definition).
 - **Expo:** `ExpoApp/screens/NewPostScreen.js` — `const categories = [...]`.
 
 ### Items (Expo)

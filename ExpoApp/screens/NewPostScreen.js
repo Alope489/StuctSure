@@ -63,7 +63,9 @@ export default function NewPostScreen() {
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [nearbyError, setNearbyError] = useState(null)
   const [linkedBuilding, setLinkedBuilding] = useState(null)
+  const [usedResidentialFallback, setUsedResidentialFallback] = useState(false)
   const [resolutionStatus, setResolutionStatus] = useState(null)
+  const [creatingPost, setCreatingPost] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
   const cameraRef = useRef(null)
 
@@ -78,6 +80,37 @@ export default function NewPostScreen() {
       .then((list) => {
         setNearbyOptions(list)
         setNearbyLoading(false)
+        if (list.length === 0) {
+          showThemedDialog({
+            title: 'No public buildings nearby',
+            message:
+              'No public buildings were found within 200 meters. Is this location residential housing?',
+            buttons: [
+              {
+                text: 'No, cancel post',
+                style: 'destructive',
+                onPress: () => leaveNewPost(navigation),
+              },
+              {
+                text: 'Yes, use current location',
+                style: 'default',
+                onPress: () => {
+                  setUsedResidentialFallback(true)
+                  setLinkedBuilding({
+                    id: `residential-${Date.now()}`,
+                    name: 'Residential housing',
+                    addressLine: '',
+                    lat: gpsCoords.latitude,
+                    lon: gpsCoords.longitude,
+                    rawType: 'residential',
+                  })
+                },
+              },
+            ],
+          })
+        } else {
+          setUsedResidentialFallback(false)
+        }
       })
       .catch((err) => {
         if (err.name === 'AbortError') return
@@ -117,6 +150,7 @@ export default function NewPostScreen() {
     setNearbyLoading(false)
     setNearbyError(null)
     setLinkedBuilding(null)
+    setUsedResidentialFallback(false)
   }
 
   const handleCancel = () => {
@@ -131,7 +165,8 @@ export default function NewPostScreen() {
   }
 
   const handleCreatePost = async () => {
-    if (!linkedBuilding) return
+    if (!linkedBuilding || creatingPost) return
+    setCreatingPost(true)
     try {
       await addPost({
         id: `new-${Date.now()}`,
@@ -163,9 +198,12 @@ export default function NewPostScreen() {
       setResolutionStatus(null)
       setSelected(new Set(['structural']))
       setSeverity(5)
+      setUsedResidentialFallback(false)
       navigation.navigate('Home')
     } catch (error) {
       setNearbyError(error.message || 'Failed to create post.')
+    } finally {
+      setCreatingPost(false)
     }
   }
 
@@ -305,7 +343,8 @@ export default function NewPostScreen() {
             {nearbyError ? <Text style={styles.nearbyError}>{nearbyError}</Text> : null}
             {!nearbyLoading && !nearbyError && nearbyOptions.length === 0 ? (
               <Text style={styles.nearbyEmpty}>
-                No public buildings found within ~200 m. Try again outdoors or near campuses, transit, or civic buildings.
+                No public buildings found within ~200 m. Confirm residential housing in the prompt to use your current
+                location, or cancel the post.
               </Text>
             ) : null}
             {nearbyOptions.map((opt) => (
@@ -322,7 +361,9 @@ export default function NewPostScreen() {
             ))}
             {linkedBuilding ? (
               <View style={styles.gpsBox}>
-                <Text style={styles.gpsLabel}>Linked building</Text>
+                <Text style={styles.gpsLabel}>
+                  {usedResidentialFallback ? 'Linked location' : 'Linked building'}
+                </Text>
                 <Text style={styles.gpsText}>{linkedBuilding.name}</Text>
               </View>
             ) : null}
@@ -336,20 +377,20 @@ export default function NewPostScreen() {
           <TouchableOpacity
             style={[
               styles.createBtn,
-              (!capturedPhoto || !postTitle.trim() || !caption.trim() || !linkedBuilding || !resolutionStatus) &&
+              (creatingPost || !capturedPhoto || !postTitle.trim() || !caption.trim() || !linkedBuilding || !resolutionStatus) &&
                 styles.createBtnDisabled,
             ]}
             onPress={handleCreatePost}
-            disabled={!capturedPhoto || !postTitle.trim() || !caption.trim() || !linkedBuilding || !resolutionStatus}
+            disabled={creatingPost || !capturedPhoto || !postTitle.trim() || !caption.trim() || !linkedBuilding || !resolutionStatus}
           >
             <Text
               style={[
                 styles.createBtnText,
-                (!capturedPhoto || !postTitle.trim() || !caption.trim() || !linkedBuilding || !resolutionStatus) &&
+                (creatingPost || !capturedPhoto || !postTitle.trim() || !caption.trim() || !linkedBuilding || !resolutionStatus) &&
                   styles.createBtnTextDisabled,
               ]}
             >
-              Create Post
+              {creatingPost ? 'Creating…' : 'Create Post'}
             </Text>
           </TouchableOpacity>
         </View>

@@ -35,6 +35,7 @@ export default function FilteredPostsScreen({ mode }) {
     getDisplayCommentCount,
     updatePostResolution,
     addComment,
+    deleteComment,
     commentsByPost,
     upvotedPosts,
     toggleUpvote,
@@ -218,7 +219,7 @@ export default function FilteredPostsScreen({ mode }) {
         <View style={styles.commentModalOverlay}>
           <TouchableOpacity style={styles.commentModalBackdrop} activeOpacity={1} onPress={closeComments} />
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
-            <View style={[styles.commentModalPanel, { paddingBottom: insets.bottom + 80 }]}>
+            <View style={[styles.commentModalPanel, { paddingBottom: insets.bottom + 12 }]}>
               <View style={styles.commentModalHandle} />
               <View style={styles.commentModalHeader}>
                 <Text style={styles.commentModalTitle}>Comments</Text>
@@ -239,7 +240,14 @@ export default function FilteredPostsScreen({ mode }) {
                     {operationErrors.comments ? <Text style={styles.commentError}>{operationErrors.comments}</Text> : null}
                     {(commentsByPost[commentsOpenForPostId] || []).map((comment) => (
                       <View key={comment.id} style={styles.commentItem}>
-                        <Text style={styles.commentAuthor}>{comment.author}</Text>
+                        <View style={styles.commentRowHead}>
+                          <Text style={styles.commentAuthor}>{comment.author}</Text>
+                          {comment.author === (user?.username || 'johndoe') ? (
+                            <TouchableOpacity onPress={() => deleteComment(commentsOpenForPostId, comment.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                              <Ionicons name="trash-outline" size={16} color="#888" />
+                            </TouchableOpacity>
+                          ) : null}
+                        </View>
                         <Text style={styles.commentText}>{comment.text}</Text>
                         <Text style={styles.commentTime}>{comment.time}</Text>
                       </View>
@@ -283,18 +291,19 @@ const styles = StyleSheet.create({
   postFeedContentEmpty: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 24 },
   commentModalOverlay: { flex: 1, justifyContent: 'flex-end' },
   commentModalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
-  commentModalPanel: { backgroundColor: '#0d0d0d', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%', paddingHorizontal: 16 },
+  commentModalPanel: { backgroundColor: '#0d0d0d', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%', paddingHorizontal: 16 },
   commentModalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', alignSelf: 'center', marginTop: 12, marginBottom: 8 },
   commentModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   commentModalTitle: { fontSize: 18, fontWeight: '600', color: '#e0e0e0' },
   commentModalPostPreview: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   commentModalPostAuthor: { fontSize: 14, fontWeight: '600', color: '#00ff7f', marginBottom: 4 },
   commentModalPostTitle: { fontSize: 13, color: 'rgba(224,224,224,0.8)' },
-  commentList: { maxHeight: 280 },
+  commentList: { maxHeight: 420 },
   commentListContent: { paddingVertical: 12, paddingBottom: 20 },
   commentMeta: { color: '#888', marginBottom: 8 },
   commentError: { color: '#ff7d7d', marginBottom: 8 },
   commentItem: { marginBottom: 16 },
+  commentRowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   commentAuthor: { fontSize: 14, fontWeight: '600', color: '#e0e0e0', marginBottom: 4 },
   commentText: { fontSize: 14, color: 'rgba(224,224,224,0.9)', lineHeight: 20 },
   commentTime: { fontSize: 12, color: '#666', marginTop: 4 },

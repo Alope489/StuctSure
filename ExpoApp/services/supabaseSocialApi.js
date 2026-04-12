@@ -2,6 +2,28 @@ import { SUPABASE_POST_IMAGES_BUCKET } from './config'
 import { createRequestError } from './requestErrors'
 import { getSupabaseClient } from './supabaseClient'
 
+const MIME_BY_EXTENSION = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  heic: 'image/heic',
+  heif: 'image/heif',
+}
+
+const contentTypeFromUri = (uri) =>
+  MIME_BY_EXTENSION[(uri?.split('.').pop()?.split('?')?.[0] || 'jpg').toLowerCase()] || 'image/jpeg'
+
+const localUriToArrayBuffer = (uri) =>
+  new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.onerror = () => reject(new Error('Could not read image bytes from local URI.'))
+    xhr.onload = () => resolve(xhr.response)
+    xhr.responseType = 'arraybuffer'
+    xhr.open('GET', uri, true)
+    xhr.send(null)
+  })
+
 const toRelativeTime = (createdAt) => {
   if (!createdAt) return 'Just now'
   const diffMs = Date.now() - new Date(createdAt).getTime()
@@ -46,11 +68,19 @@ const mapCommentRow = (row) => ({
   createdAt: row?.created_at || null,
 })
 
+const deriveUsername = (user) =>
+  ((user?.user_metadata?.username || '').trim() || (user?.email || '').split('@')[0] || `user_${String(user?.id || '').slice(0, 8) || Date.now()}`).slice(0, 32)
+
 async function getCurrentAuthUser() {
   const { data, error } = await getSupabaseClient().auth.getUser()
   if (error) throw createRequestError({ message: error.message || 'Auth check failed.', code: error.status ? `AUTH_${error.status}` : 'AUTH_CHECK_FAILED', retryable: false, operation: 'getCurrentAuthUser' })
   if (!data?.user?.id) throw createRequestError({ message: 'You must be logged in.', code: 'AUTH_REQUIRED', retryable: false, operation: 'getCurrentAuthUser' })
   return data.user
+}
+
+async function ensureProfileExists(user) {
+  const { error } = await getSupabaseClient().from('profiles').upsert({ id: user.id, username: deriveUsername(user) }, { onConflict: 'id' })
+  if (error) throw createRequestError({ message: error.message || 'Could not ensure your profile row exists.', code: error.code || 'PROFILE_ENSURE_FAILED', retryable: false, operation: 'ensureProfileExists' })
 }
 
 async function getHydratedPost(postId) {
@@ -83,10 +113,19 @@ async function getHydratedPost(postId) {
 }
 
 async function uploadPostImage(userId, postId, uri, index) {
-  const blob = await (await fetch(uri)).blob()
   const extension = uri?.split('.').pop()?.split('?')?.[0] || 'jpg'
   const filePath = `${userId}/${postId}/${Date.now()}-${index}.${extension}`
-  const { error } = await getSupabaseClient().storage.from(SUPABASE_POST_IMAGES_BUCKET).upload(filePath, blob, { upsert: false, contentType: blob.type || 'image/jpeg' })
+  const { error } = await getSupabaseClient().storage.from(SUPABASE_POST_IMAGES_BUCKET).upload(
+    filePath,
+    await (async () => {
+      try {
+        return await (await fetch(uri)).arrayBuffer()
+      } catch (_unusedError) {
+        return localUriToArrayBuffer(uri)
+      }
+    })(),
+    { upsert: false, contentType: contentTypeFromUri(uri) }
+  )
   if (error) throw createRequestError({ message: error.message || 'Image upload failed.', code: error.statusCode ? `STORAGE_${error.statusCode}` : 'IMAGE_UPLOAD_FAILED', retryable: false, operation: 'uploadPostImage' })
   return { storagePath: filePath, publicUrl: getSupabaseClient().storage.from(SUPABASE_POST_IMAGES_BUCKET).getPublicUrl(filePath).data.publicUrl }
 }
@@ -119,8 +158,16 @@ export async function getSupabaseFeed() {
   return (data || []).map(mapPostRow)
 }
 
+export async function getSupabaseMyUpvotedPostIds() {
+  const user = await getCurrentAuthUser()
+  const { data, error } = await getSupabaseClient().from('upvotes').select('post_id').eq('user_id', user.id)
+  if (error) throw createRequestError({ message: error.message || 'Failed to load upvotes.', code: error.code || 'UPVOTES_FETCH_FAILED', retryable: false, operation: 'getSupabaseMyUpvotedPostIds' })
+  return (data || []).map((row) => row.post_id).filter(Boolean)
+}
+
 export async function createSupabasePost(post) {
   const user = await getCurrentAuthUser()
+  await ensureProfileExists(user)
   const { data, error } = await getSupabaseClient()
     .from('posts')
     .insert({
@@ -140,14 +187,23 @@ export async function createSupabasePost(post) {
     .single()
   if (error) throw createRequestError({ message: error.message || 'Failed to create post.', code: error.code || 'POST_CREATE_FAILED', retryable: false, operation: 'createSupabasePost' })
   if ((post?.images || []).length) {
-    const rows = await Promise.all(
-      post.images.map(async (image, index) => {
-        const uploaded = await uploadPostImage(user.id, data.id, image?.uri || image?.url || image, index)
-        return { post_id: data.id, storage_path: uploaded.storagePath, public_url: uploaded.publicUrl, sort_order: index }
-      })
-    )
-    const { error: imageError } = await getSupabaseClient().from('post_images').insert(rows)
-    if (imageError) throw createRequestError({ message: imageError.message || 'Created post, but failed to save image references.', code: imageError.code || 'POST_IMAGES_CREATE_FAILED', retryable: false, operation: 'createSupabasePostImages' })
+    const rows = (
+      await Promise.all(
+        post.images.map(async (image, index) => {
+          try {
+            const uploaded = await uploadPostImage(user.id, data.id, image?.uri || image?.url || image, index)
+            return { post_id: data.id, storage_path: uploaded.storagePath, public_url: uploaded.publicUrl, sort_order: index }
+          } catch (uploadError) {
+            console.warn('Post image upload skipped:', uploadError?.message || uploadError)
+            return null
+          }
+        })
+      )
+    ).filter(Boolean)
+    if (rows.length) {
+      const { error: imageError } = await getSupabaseClient().from('post_images').insert(rows)
+      if (imageError) console.warn('Post image reference insert skipped:', imageError?.message || imageError)
+    }
   }
   return getHydratedPost(data.id)
 }
@@ -179,6 +235,11 @@ export async function addSupabaseComment(postId, text) {
   return mapCommentRow(data)
 }
 
+export async function deleteSupabaseComment(commentId) {
+  const { error } = await getSupabaseClient().from('comments').delete().eq('id', commentId)
+  if (error) throw createRequestError({ message: error.message || 'Failed to delete comment.', code: error.code || 'COMMENT_DELETE_FAILED', retryable: false, operation: 'deleteSupabaseComment' })
+}
+
 export async function toggleSupabaseUpvote(postId, isUpvoted) {
   const user = await getCurrentAuthUser()
   if (isUpvoted) {
@@ -186,6 +247,7 @@ export async function toggleSupabaseUpvote(postId, isUpvoted) {
     if (error) throw createRequestError({ message: error.message || 'Failed to remove upvote.', code: error.code || 'UPVOTE_DELETE_FAILED', retryable: false, operation: 'toggleSupabaseUpvote' })
     return
   }
-  const { error } = await getSupabaseClient().from('upvotes').upsert({ post_id: postId, user_id: user.id }, { onConflict: 'post_id,user_id' })
+  const { error } = await getSupabaseClient().from('upvotes').insert({ post_id: postId, user_id: user.id })
+  if (error?.code === '23505') return
   if (error) throw createRequestError({ message: error.message || 'Failed to add upvote.', code: error.code || 'UPVOTE_CREATE_FAILED', retryable: false, operation: 'toggleSupabaseUpvote' })
 }

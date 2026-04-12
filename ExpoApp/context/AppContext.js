@@ -1,12 +1,14 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useRef } from 'react'
 import { allPosts, initialCommentsByPost } from '../data/posts'
 import { initialBuildings, PLACEHOLDER_BUILDING_IMAGE } from '../data/buildings'
 import {
   addComment as addRemoteComment,
   createPost,
+  deleteComment as deleteRemoteComment,
   deletePost as deleteRemotePost,
   fetchComments,
   fetchFeed,
+  fetchMyUpvotes,
   toggleUpvote as toggleRemoteUpvote,
   updatePostResolution as updateRemoteResolution,
 } from '../services/apiClient'
@@ -16,6 +18,7 @@ import {
   signInWithSupabase,
   signOutSupabase,
   signUpWithSupabase,
+  updateSupabaseProfile,
 } from '../services/supabaseAuth'
 import { isAuthError } from '../services/requestErrors'
 
@@ -63,6 +66,7 @@ export function AppProvider({ children }) {
   const [commentLoadingPostId, setCommentLoadingPostId] = useState(null)
   const [operationErrors, setOperationErrors] = useState({})
   const [lastError, setLastError] = useState(null)
+  const feedRefreshInFlight = useRef(false)
 
   const clearError = useCallback((operation) => {
     setOperationErrors((prev) => {
@@ -158,21 +162,41 @@ export function AppProvider({ children }) {
     clearError('auth')
   }, [clearError])
 
+  const updateProfile = useCallback(
+    async (patch) => {
+      clearError('profile')
+      setUser((prev) => ({ ...prev, ...patch }))
+      if (!hasSupabaseConfigured() || !sessionToken) return
+      try {
+        const saved = await updateSupabaseProfile(patch)
+        setUser((prev) => ({ ...prev, ...saved }))
+      } catch (error) {
+        setError('profile', error, 'Could not update profile.')
+      }
+    },
+    [sessionToken, clearError, setError]
+  )
+
   const refreshPosts = useCallback(async () => {
+    if (feedRefreshInFlight.current) return []
+    feedRefreshInFlight.current = true
     setFeedLoading(true)
     clearError('feed')
     try {
       const nextPosts = await fetchFeed(sessionToken)
+      const nextUpvotedPosts = await fetchMyUpvotes(sessionToken)
       setPosts(nextPosts)
+      setUpvotedPosts(new Set(nextUpvotedPosts))
       setBuildings((prev) => withKnownBuildings(nextPosts, prev.length ? prev : initialBuildings))
-      setFeedLoading(false)
       return nextPosts
     } catch (error) {
-      setFeedLoading(false)
       setError('feed', error, 'Failed to refresh feed.')
-      return posts
+      return []
+    } finally {
+      setFeedLoading(false)
+      feedRefreshInFlight.current = false
     }
-  }, [sessionToken, posts, clearError, setError])
+  }, [sessionToken, clearError, setError])
 
   const loadCommentsForPost = useCallback(
     async (postId) => {
@@ -273,6 +297,11 @@ export function AppProvider({ children }) {
       const target = posts.find((post) => post.id === postId)
       const isUpvoted = upvotedPosts.has(postId)
       clearError('upvote')
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id !== postId ? post : { ...post, likes: Math.max(0, Number(post.likes || 0) + (isUpvoted ? -1 : 1)) }
+        )
+      )
       setUpvotedPosts((prev) => {
         const next = new Set(prev)
         if (next.has(postId)) next.delete(postId)
@@ -283,6 +312,11 @@ export function AppProvider({ children }) {
         if (target) await toggleRemoteUpvote(sessionToken, target, isUpvoted)
       } catch (error) {
         setError('upvote', error, 'Could not update upvote.')
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id !== postId ? post : { ...post, likes: Math.max(0, Number(post.likes || 0) + (isUpvoted ? 1 : -1)) }
+          )
+        )
         setUpvotedPosts((prev) => {
           const next = new Set(prev)
           if (isUpvoted) next.add(postId)
@@ -300,6 +334,11 @@ export function AppProvider({ children }) {
       const optimistic = { id: `c-${Date.now()}`, author: user.username, text: comment.text.trim(), time: comment.time || 'Just now' }
       clearError('addComment')
       setCommentsByPost((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), optimistic] }))
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id !== postId ? post : { ...post, comments: Math.max(0, Number(post.comments || 0) + 1) }
+        )
+      )
       try {
         const target = posts.find((post) => post.id === postId)
         if (!target) return
@@ -310,9 +349,37 @@ export function AppProvider({ children }) {
         }))
       } catch (error) {
         setError('addComment', error, 'Could not add comment.')
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id !== postId ? post : { ...post, comments: Math.max(0, Number(post.comments || 0) - 1) }
+          )
+        )
       }
     },
     [sessionToken, posts, user.username, clearError, setError]
+  )
+
+  const deleteComment = useCallback(
+    async (postId, commentId) => {
+      if (!postId || !commentId) return
+      clearError('deleteComment')
+      setCommentsByPost((prev) => ({
+        ...prev,
+        [postId]: (prev[postId] || []).filter((comment) => comment.id !== commentId),
+      }))
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id !== postId ? post : { ...post, comments: Math.max(0, Number(post.comments || 0) - 1) }
+        )
+      )
+      try {
+        await deleteRemoteComment(sessionToken, commentId)
+      } catch (error) {
+        setError('deleteComment', error, 'Could not delete comment.')
+        await Promise.all([loadCommentsForPost(postId), refreshPosts()])
+      }
+    },
+    [sessionToken, clearError, setError, loadCommentsForPost, refreshPosts]
   )
 
   const value = {
@@ -332,6 +399,7 @@ export function AppProvider({ children }) {
     loginWithSupabase,
     signupWithSupabase,
     logout,
+    updateProfile,
     refreshPosts,
     loadCommentsForPost,
     upvotedPosts,
@@ -341,10 +409,11 @@ export function AppProvider({ children }) {
     updatePostResolution,
     toggleUpvote,
     addComment,
+    deleteComment,
     getDisplayCommentCount: (postId) => {
       const post = posts.find((item) => item.id === postId)
       if (!post) return 0
-      return (post.comments || 0) + Math.max(0, (commentsByPost[postId] || []).length - (initialCommentsByPost[postId] || []).length)
+      return Math.max(Number(post.comments || 0), (commentsByPost[postId] || []).length)
     },
   }
 

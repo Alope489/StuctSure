@@ -52,7 +52,6 @@ export function PostCard({
   }, [post.id])
   const initial = (post.author || '?').trim().slice(0, 1).toUpperCase()
   const images = post.images ?? []
-  const displayCount = post.likes + (isUpvoted ? 1 : 0)
   const onScroll = (e) => {
     const offset = e.nativeEvent.contentOffset.x
     const idx = Math.round(offset / slideWidth)
@@ -160,7 +159,7 @@ export function PostCard({
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionRow} onPress={() => onUpvote(post.id)} activeOpacity={0.6}>
           <Ionicons name={isUpvoted ? 'arrow-up' : 'arrow-up-outline'} size={20} color={isUpvoted ? '#00ff7f' : '#888'} />
-          <Text style={[styles.actionText, isUpvoted && styles.actionTextActive]}>{displayCount}</Text>
+          <Text style={[styles.actionText, isUpvoted && styles.actionTextActive]}>{post.likes || 0}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionRow} onPress={() => onComment(post.id)} activeOpacity={0.6}>
           <Ionicons name="chatbubble-outline" size={18} color="#888" />

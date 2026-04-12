@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, RefreshControl } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect, useScrollToTop } from '@react-navigation/native'
@@ -21,6 +21,7 @@ export default function HomeScreen({ navigation }) {
     commentsByPost,
     toggleUpvote,
     addComment,
+    deleteComment,
     deletePost,
     updatePostResolution,
     getDisplayCommentCount,
@@ -45,14 +46,16 @@ export default function HomeScreen({ navigation }) {
   )
 
   useEffect(() => {
-    if (commentsOpenForPostId) loadCommentsForPost(commentsOpenForPostId)
-  }, [commentsOpenForPostId, loadCommentsForPost])
-  useEffect(() => {
     if (!hasAuthConfigured || sessionToken || !authReady) return
     const parent = navigation.getParent?.()
     if (parent) parent.navigate('Login')
     else navigation.navigate('Login')
   }, [authReady, hasAuthConfigured, navigation, sessionToken])
+
+  const openCommentsForPost = (postId) => {
+    setCommentsOpenForPostId(postId)
+    if (postId) loadCommentsForPost(postId)
+  }
 
   const handlePostMenu = (post) => {
     const isOwn = post.author === (user?.username || 'johndoe')
@@ -135,16 +138,31 @@ export default function HomeScreen({ navigation }) {
           <Image source={user?.photo ? { uri: user.photo } : require('../assets/johndoe.png')} style={styles.profilePic} />
         </TouchableOpacity>
       </View>
-      <ScrollView ref={scrollRef} style={styles.feed} contentContainerStyle={styles.feedContent}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.feed}
+        contentContainerStyle={styles.feedContent}
+        refreshControl={<RefreshControl refreshing={feedLoading} onRefresh={refreshPosts} tintColor="#00ff7f" />}
+      >
         {feedLoading ? <ActivityIndicator color="#00ff7f" style={styles.feedLoading} /> : null}
         {lastError ? <Text style={styles.errorText}>{lastError}</Text> : null}
+        {!feedLoading && posts.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>No posts available</Text>
+            <Text style={styles.emptyStateBody}>Pull to refresh or tap below to check again.</Text>
+            <TouchableOpacity style={styles.emptyStateRefreshBtn} onPress={refreshPosts} activeOpacity={0.7}>
+              <Ionicons name="refresh" size={18} color="#00ff7f" />
+              <Text style={styles.emptyStateRefreshText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
         {posts.map((p) => (
           <PostCard
             key={p.id}
             post={p}
             isUpvoted={upvotedPosts.has(p.id)}
             onUpvote={toggleUpvote}
-            onComment={setCommentsOpenForPostId}
+            onComment={openCommentsForPost}
             displayCommentCount={getDisplayCommentCount(p.id)}
             onPostMenu={handlePostMenu}
             onAuthorPress={() =>
@@ -176,7 +194,7 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.commentModalOverlay}>
           <TouchableOpacity style={styles.commentModalBackdrop} activeOpacity={1} onPress={closeComments} />
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
-            <View style={[styles.commentModalPanel, { paddingBottom: insets.bottom + 80 }]}>
+            <View style={[styles.commentModalPanel, { paddingBottom: insets.bottom + 12 }]}>
               <View style={styles.commentModalHandle} />
               <View style={styles.commentModalHeader}>
                 <Text style={styles.commentModalTitle}>Comments</Text>
@@ -204,7 +222,14 @@ export default function HomeScreen({ navigation }) {
                     {operationErrors.comments ? <Text style={styles.commentError}>{operationErrors.comments}</Text> : null}
                     {(commentsByPost[commentsOpenForPostId] || []).map((c) => (
                       <View key={c.id} style={styles.commentItem}>
-                        <Text style={styles.commentAuthor}>{c.author}</Text>
+                        <View style={styles.commentRowHead}>
+                          <Text style={styles.commentAuthor}>{c.author}</Text>
+                          {c.author === (user?.username || 'johndoe') ? (
+                            <TouchableOpacity onPress={() => deleteComment(commentsOpenForPostId, c.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                              <Ionicons name="trash-outline" size={16} color="#888" />
+                            </TouchableOpacity>
+                          ) : null}
+                        </View>
                         <Text style={styles.commentText}>{c.text}</Text>
                         <Text style={styles.commentTime}>{c.time}</Text>
                       </View>
@@ -251,13 +276,38 @@ const styles = StyleSheet.create({
   feedContent: { padding: 14, gap: 14 },
   feedLoading: { marginBottom: 12 },
   errorText: { color: '#ff7d7d', marginBottom: 8 },
+  emptyState: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyStateTitle: { color: '#e0e0e0', fontSize: 16, fontWeight: '600' },
+  emptyStateBody: { color: '#888', fontSize: 13, textAlign: 'center' },
+  emptyStateRefreshBtn: {
+    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(0,255,127,0.35)',
+    backgroundColor: 'rgba(0,255,127,0.08)',
+  },
+  emptyStateRefreshText: { color: '#00ff7f', fontSize: 14, fontWeight: '600' },
   commentModalOverlay: { flex: 1, justifyContent: 'flex-end' },
   commentModalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
   commentModalPanel: {
     backgroundColor: '#0d0d0d',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '85%',
+    maxHeight: '92%',
     paddingHorizontal: 16,
   },
   commentModalHandle: {
@@ -281,11 +331,12 @@ const styles = StyleSheet.create({
   commentModalPostPreview: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   commentModalPostAuthor: { fontSize: 14, fontWeight: '600', color: '#00ff7f', marginBottom: 4 },
   commentModalPostTitle: { fontSize: 13, color: 'rgba(224,224,224,0.8)' },
-  commentList: { maxHeight: 280 },
+  commentList: { maxHeight: 420 },
   commentLoading: { marginBottom: 10 },
   commentError: { color: '#ff7d7d', marginBottom: 10 },
   commentListContent: { paddingVertical: 12, paddingBottom: 20 },
   commentItem: { marginBottom: 16 },
+  commentRowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   commentAuthor: { fontSize: 14, fontWeight: '600', color: '#e0e0e0', marginBottom: 4 },
   commentText: { fontSize: 14, color: 'rgba(224,224,224,0.9)', lineHeight: 20 },
   commentTime: { fontSize: 12, color: '#666', marginTop: 4 },

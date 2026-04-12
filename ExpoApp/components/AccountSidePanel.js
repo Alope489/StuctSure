@@ -25,7 +25,7 @@ export function AccountSidePanel({ visible, onClose, navigation }) {
   const insets = useSafeAreaInsets()
   const { width: winW } = useWindowDimensions()
   const panelWidth = Math.min(400, Math.round(winW * 0.9))
-  const { user, setUser, logout } = useApp()
+  const { user, setUser, logout, updateProfile } = useApp()
   const showThemedDialog = useThemedDialog()
 
   const takeProfilePhoto = async () => {
@@ -45,7 +45,7 @@ export function AccountSidePanel({ visible, onClose, navigation }) {
       quality: 0.8,
     })
     if (!result.canceled && result.assets[0]) {
-      setUser((u) => ({ ...u, photo: result.assets[0].uri }))
+      await updateProfile({ photo: result.assets[0].uri })
     }
   }
 
@@ -66,7 +66,7 @@ export function AccountSidePanel({ visible, onClose, navigation }) {
       quality: 0.8,
     })
     if (!result.canceled && result.assets[0]) {
-      setUser((u) => ({ ...u, photo: result.assets[0].uri }))
+      await updateProfile({ photo: result.assets[0].uri })
     }
   }
 

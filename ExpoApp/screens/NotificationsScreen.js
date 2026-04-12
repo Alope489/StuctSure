@@ -1,46 +1,46 @@
-import { useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity } from 'react-native'
+import { useState, useMemo, useCallback } from 'react'
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import { AccountSidePanel } from '../components/AccountSidePanel'
 
-const demoNotifications = [
-  { id: 'n1', name: 'Jane Cooper', message: 'OMG! 😱 ...', time: '24m', unread: true },
-  { id: 'n2', name: 'Jenny Wilson', message: 'Upvoted your post', time: '2h', unread: true },
-  { id: 'n3', name: 'Esther Howard', message: 'Upvoted your post', time: '8h', unread: false },
-  { id: 'n4', name: 'Leslie Alexander', message: 'Upvoted your post', time: '2h ago', unread: false },
-  { id: 'n5', name: 'Savannah Nguyen', message: 'Upvoted your post', time: '2d', unread: false },
-  { id: 'n6', name: 'Darlene Robertson', message: 'I walked by just the other...', time: '2d', unread: false },
-  { id: 'n7', name: 'Marvin McKinney', message: 'Upvoted your post', time: '2w', unread: false },
-  { id: 'n8', name: 'Kathryn Murphy', message: 'They need to fix it soon!...', time: '2w', unread: false },
-]
-
-function NotificationItem({ item }) {
-  const initial = (item.name || '?').trim().slice(0, 1).toUpperCase()
-
-  return (
-    <TouchableOpacity style={styles.item} activeOpacity={0.7}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{initial}</Text>
-      </View>
-      <View style={styles.content}>
-        <Text style={styles.message}>
-          <Text style={styles.name}>{item.name} </Text>
-          {item.message} <Text style={styles.time}>{item.time}</Text>
-        </Text>
-      </View>
-      {item.unread && <View style={styles.dot} />}
-    </TouchableOpacity>
-  )
-}
-
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
-  const { user } = useApp()
+  const { user, posts, refreshPosts, feedLoading } = useApp()
   const [profileOpen, setProfileOpen] = useState(false)
+  const activityNotifications = useMemo(
+    () =>
+      [
+        ...posts
+          .filter((post) => post.author === (user?.username || 'johndoe') && Number(post.likes || 0) > 0)
+          .map((post) => ({
+            id: `${post.id}-upvotes`,
+            kind: 'upvote',
+            count: Number(post.likes || 0),
+            title: post.title || 'Untitled report',
+            time: post.time || 'Recently',
+          })),
+        ...posts
+          .filter((post) => post.author === (user?.username || 'johndoe') && Number(post.comments || 0) > 0)
+          .map((post) => ({
+            id: `${post.id}-comments`,
+            kind: 'comment',
+            count: Number(post.comments || 0),
+            title: post.title || 'Untitled report',
+            time: post.time || 'Recently',
+          })),
+      ].sort((a, b) => b.count - a.count),
+    [posts, user?.username]
+  )
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshPosts()
+    }, [refreshPosts])
+  )
 
   return (
     <View style={styles.container}>
@@ -56,10 +56,52 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.list} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-        {demoNotifications.map((item) => (
-          <NotificationItem key={item.id} item={item} />
-        ))}
+      <ScrollView
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={feedLoading} onRefresh={refreshPosts} tintColor="#00ff7f" />}
+      >
+        {feedLoading ? <ActivityIndicator color="#00ff7f" style={styles.notificationsLoading} /> : null}
+        {activityNotifications.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>No notifications yet</Text>
+            <Text style={styles.emptyStateBody}>
+              When people upvote or comment on your reports, notifications will appear here.
+            </Text>
+            <TouchableOpacity style={styles.emptyStateRefreshBtn} onPress={refreshPosts} activeOpacity={0.7}>
+              <Ionicons name="refresh" size={18} color="#00ff7f" />
+              <Text style={styles.emptyStateRefreshText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          activityNotifications.map((item) => (
+            <View key={item.id} style={styles.notificationCard}>
+              <View style={[styles.notificationIconWrap, item.kind === 'comment' && styles.notificationIconWrapComment]}>
+                <Ionicons
+                  name={item.kind === 'comment' ? 'chatbubble-outline' : 'arrow-up'}
+                  size={16}
+                  color={item.kind === 'comment' ? '#4cc9f0' : '#00ff7f'}
+                />
+              </View>
+              <View style={styles.notificationBody}>
+                <Text style={styles.notificationTitle}>
+                  {item.kind === 'comment'
+                    ? item.count === 1
+                      ? '1 new comment on your report'
+                      : `${item.count} new comments on your report`
+                    : item.count === 1
+                      ? '1 new upvote on your report'
+                      : `${item.count} new upvotes on your report`}
+                </Text>
+                <Text style={styles.notificationSubtitle} numberOfLines={2}>
+                  {item.title}
+                </Text>
+                <Text style={styles.notificationTime}>{item.time}</Text>
+              </View>
+            </View>
+          ))
+        )}
       </ScrollView>
 
       <AccountSidePanel visible={profileOpen} onClose={() => setProfileOpen(false)} navigation={navigation} />
@@ -84,33 +126,60 @@ const styles = StyleSheet.create({
   profilePic: { width: 40, height: 40, borderRadius: 20 },
   list: { flex: 1 },
   listContent: { padding: 14 },
-  item: {
+  notificationsLoading: { marginBottom: 10 },
+  emptyState: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyStateTitle: { color: '#e0e0e0', fontSize: 16, fontWeight: '600' },
+  emptyStateBody: { color: '#888', fontSize: 13, textAlign: 'center' },
+  emptyStateRefreshBtn: {
+    marginTop: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(0,255,127,0.35)',
+    backgroundColor: 'rgba(0,255,127,0.08)',
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,255,127,0.25)',
+  emptyStateRefreshText: { color: '#00ff7f', fontSize: 14, fontWeight: '600' },
+  notificationCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    padding: 12,
+    marginBottom: 10,
+    gap: 10,
+  },
+  notificationIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,255,127,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,255,127,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginTop: 2,
   },
-  avatarText: { color: '#e0e0e0', fontWeight: '700', fontSize: 16 },
-  content: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline' },
-  name: { fontWeight: '600', color: '#e8eef2', fontSize: 15 },
-  message: { color: '#888', fontSize: 14 },
-  time: { color: '#888', fontSize: 13 },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#00ff7f',
-    marginLeft: 8,
+  notificationBody: { flex: 1 },
+  notificationIconWrapComment: {
+    backgroundColor: 'rgba(76,201,240,0.12)',
+    borderColor: 'rgba(76,201,240,0.25)',
   },
+  notificationTitle: { color: '#e0e0e0', fontSize: 14, fontWeight: '600' },
+  notificationSubtitle: { color: '#9aa0a6', fontSize: 13, marginTop: 3 },
+  notificationTime: { color: '#6e7378', fontSize: 12, marginTop: 6 },
 })

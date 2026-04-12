@@ -3,9 +3,11 @@ import { HAS_SUPABASE_CONFIG } from './config'
 import {
   addSupabaseComment,
   createSupabasePost,
+  deleteSupabaseComment,
   deleteSupabasePost,
   getSupabaseComments,
   getSupabaseFeed,
+  getSupabaseMyUpvotedPostIds,
   toggleSupabaseUpvote,
   updateSupabaseResolution,
 } from './supabaseSocialApi'
@@ -43,7 +45,17 @@ export async function fetchComments(token, post) {
   return getSupabaseComments(post.id)
 }
 
+export async function fetchMyUpvotes(token) {
+  if (!HAS_SUPABASE_CONFIG || !token) return []
+  return getSupabaseMyUpvotedPostIds()
+}
+
 export async function addComment(token, post, text) {
   if (!HAS_SUPABASE_CONFIG || !token || !post?.id) return { id: `c-${Date.now()}`, text, time: 'Just now' }
   return addSupabaseComment(post.id, text)
+}
+
+export async function deleteComment(token, commentId) {
+  if (!HAS_SUPABASE_CONFIG || !token || !commentId) return
+  await deleteSupabaseComment(commentId)
 }

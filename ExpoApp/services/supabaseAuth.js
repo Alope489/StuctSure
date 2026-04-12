@@ -67,6 +67,28 @@ export async function restoreSupabaseSession() {
   return toSessionPayload(data?.session, null)
 }
 
+export async function updateSupabaseProfile({ username, photo } = {}) {
+  if (!HAS_SUPABASE_CONFIG) throw new Error('Supabase is not configured.')
+  const { data, error } = await getSupabaseClient().auth.getUser()
+  if (error) throw createRequestError({ message: error.message || 'Auth check failed.', code: error.status ? `AUTH_${error.status}` : 'AUTH_CHECK_FAILED', retryable: false, operation: 'updateSupabaseProfileAuth' })
+  if (!data?.user?.id) throw createRequestError({ message: 'You must be logged in.', code: 'AUTH_REQUIRED', retryable: false, operation: 'updateSupabaseProfileAuth' })
+  const profile = await getProfileById(data.user.id)
+  const { data: updated, error: upsertError } = await getSupabaseClient()
+    .from('profiles')
+    .upsert(
+      {
+        id: data.user.id,
+        username: (username || '').trim() || profile?.username || deriveUsername(data.user.email),
+        avatar_url: photo ?? profile?.avatar_url ?? null,
+      },
+      { onConflict: 'id' }
+    )
+    .select('id, username, avatar_url')
+    .single()
+  if (upsertError) throw createRequestError({ message: upsertError.message || 'Could not save profile.', code: upsertError.code || 'PROFILE_UPDATE_FAILED', retryable: false, operation: 'updateSupabaseProfile' })
+  return toPublicUser(data.user, updated)
+}
+
 export async function signOutSupabase() {
   if (!HAS_SUPABASE_CONFIG) return
   const { error } = await getSupabaseClient().auth.signOut()

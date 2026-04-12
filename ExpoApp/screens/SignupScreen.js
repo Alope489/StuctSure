@@ -27,7 +27,7 @@ export default function SignupScreen() {
           style={styles.btnPrimary}
           onPress={async () => {
             if (!hasAuthConfigured) {
-              navigation.replace('Main')
+              setLocalError('Supabase is not configured for this build.')
               return
             }
             if (!username.trim() || !email.trim() || !password || !confirmPassword) {
@@ -51,7 +51,7 @@ export default function SignupScreen() {
         >
           {authBusy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Create account</Text>}
         </TouchableOpacity>
-        <Text style={styles.divider}>{hasAuthConfigured ? 'Supabase handles account creation and sign-in.' : 'Supabase is not configured.'}</Text>
+        <Text style={styles.divider}>{hasAuthConfigured ? 'Supabase handles account creation and sign-in.' : 'Supabase is not configured for this build.'}</Text>
         <TouchableOpacity style={styles.btnSecondary} onPress={() => navigation.navigate('Login')} disabled={authBusy}>
           <Text style={styles.btnText}>Go to Login</Text>
         </TouchableOpacity>
