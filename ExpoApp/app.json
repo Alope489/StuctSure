@@ -2,6 +2,7 @@
   "expo": {
     "name": "StructSure",
     "slug": "structsure",
+    "scheme": "structsure",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,12 +15,18 @@
     "plugins": [
       [
         "expo-camera",
-        { "cameraPermission": "Allow StructSure to access your camera to capture damage photos." }
+        {
+          "cameraPermission": "Allow StructSure to access your camera to capture damage photos."
+        }
       ],
       [
         "expo-location",
-        { "locationWhenInUsePermission": "Allow StructSure to use your location to tag reported issues." }
-      ]
+        {
+          "locationWhenInUsePermission": "Allow StructSure to use your location to tag reported issues."
+        }
+      ],
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "ios": {
       "supportsTablet": true
@@ -30,10 +37,23 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.structsureorg.structsure"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "df30e9e8-e8a9-4090-90c2-bb7660011847"
+      }
+    },
+    "owner": "structsure-org"
   }
 }

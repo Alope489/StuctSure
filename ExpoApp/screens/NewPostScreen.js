@@ -51,7 +51,7 @@ export default function NewPostScreen() {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
   const showThemedDialog = useThemedDialog()
-  const { user, addPost } = useApp()
+  const { user, addPost, lastError } = useApp()
   const [permission, requestPermission] = useCameraPermissions()
   const [postTitle, setPostTitle] = useState('')
   const [caption, setCaption] = useState('')
@@ -130,40 +130,43 @@ export default function NewPostScreen() {
     })
   }
 
-  const handleCreatePost = () => {
+  const handleCreatePost = async () => {
     if (!linkedBuilding) return
-
-    addPost({
-      id: `new-${Date.now()}`,
-      author: user?.username || 'johndoe',
-      time: 'Just now',
-      sortOrder: 0,
-      tags: [...selected].map((id) => categories.find((c) => c.id === id)?.label || id),
-      tagsMore: 0,
-      title: postTitle.trim(),
-      body: caption.trim() || 'No description provided.',
-      likes: 0,
-      comments: 0,
-      images: capturedPhoto ? [{ uri: capturedPhoto }] : [],
-      buildingId: linkedBuilding.id,
-      buildingName: linkedBuilding.name,
-      buildingAddress: linkedBuilding.addressLine,
-      latitude: linkedBuilding.lat,
-      longitude: linkedBuilding.lon,
-      resolutionStatus,
-      severity: Math.round(severity),
-    })
-    setPostTitle('')
-    setCaption('')
-    setCapturedPhoto(null)
-    setGpsCoords(null)
-    setNearbyOptions([])
-    setNearbyError(null)
-    setLinkedBuilding(null)
-    setResolutionStatus(null)
-    setSelected(new Set(['structural']))
-    setSeverity(5)
-    navigation.navigate('Home')
+    try {
+      await addPost({
+        id: `new-${Date.now()}`,
+        author: user?.username || 'johndoe',
+        time: 'Just now',
+        sortOrder: 0,
+        tags: [...selected].map((id) => categories.find((c) => c.id === id)?.label || id),
+        tagsMore: 0,
+        title: postTitle.trim(),
+        body: caption.trim() || 'No description provided.',
+        likes: 0,
+        comments: 0,
+        images: capturedPhoto ? [{ uri: capturedPhoto }] : [],
+        buildingId: linkedBuilding.id,
+        buildingName: linkedBuilding.name,
+        buildingAddress: linkedBuilding.addressLine,
+        latitude: linkedBuilding.lat,
+        longitude: linkedBuilding.lon,
+        resolutionStatus,
+        severity: Math.round(severity),
+      })
+      setPostTitle('')
+      setCaption('')
+      setCapturedPhoto(null)
+      setGpsCoords(null)
+      setNearbyOptions([])
+      setNearbyError(null)
+      setLinkedBuilding(null)
+      setResolutionStatus(null)
+      setSelected(new Set(['structural']))
+      setSeverity(5)
+      navigation.navigate('Home')
+    } catch (error) {
+      setNearbyError(error.message || 'Failed to create post.')
+    }
   }
 
   if (!permission) {
@@ -350,6 +353,7 @@ export default function NewPostScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+        {lastError ? <Text style={styles.nearbyError}>{lastError}</Text> : null}
       </ScrollView>
     </View>
   )

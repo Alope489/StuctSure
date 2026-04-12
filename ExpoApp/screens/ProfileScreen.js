@@ -16,7 +16,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation()
   const route = useRoute()
   const showThemedDialog = useThemedDialog()
-  const { user, posts } = useApp()
+  const { user, posts, logout } = useApp()
   const profileUsername = route.params?.profileUsername
   const selfName = user?.username || 'johndoe'
   const displayUsername = profileUsername ?? selfName
@@ -28,7 +28,7 @@ export default function ProfileScreen() {
       message: 'Sign out of your account?',
       buttons: [
         { text: 'Cancel', style: 'cancel', onPress: () => {} },
-        { text: 'Sign out', style: 'destructive', onPress: () => navigation.navigate('Login') },
+        { text: 'Sign out', style: 'destructive', onPress: async () => { await logout(); navigation.replace('Login') } },
       ],
     })
   }

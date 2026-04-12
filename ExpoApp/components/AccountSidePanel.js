@@ -25,7 +25,7 @@ export function AccountSidePanel({ visible, onClose, navigation }) {
   const insets = useSafeAreaInsets()
   const { width: winW } = useWindowDimensions()
   const panelWidth = Math.min(400, Math.round(winW * 0.9))
-  const { user, setUser } = useApp()
+  const { user, setUser, logout } = useApp()
   const showThemedDialog = useThemedDialog()
 
   const takeProfilePhoto = async () => {
@@ -140,9 +140,10 @@ export function AccountSidePanel({ visible, onClose, navigation }) {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.profileActionBtn, styles.profileActionOutlined]}
-                onPress={() => {
+                onPress={async () => {
+                  await logout()
                   onClose()
-                  navigation.navigate('Login')
+                  navigation.replace('Login')
                 }}
               >
                 <Text style={[styles.profileActionText, styles.profileActionOutlinedText]}>Log out</Text>

@@ -2,15 +2,25 @@ import { useEffect } from 'react'
 import { View, Text, StyleSheet, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
+import { useApp } from '../context/AppContext'
 
 export default function LoadingScreen() {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
+  const { restoreAuthSession, refreshPosts } = useApp()
 
   useEffect(() => {
-    const t = setTimeout(() => navigation.replace('Login'), 2200)
-    return () => clearTimeout(t)
-  }, [navigation])
+    let active = true
+    ;(async () => {
+      const session = await restoreAuthSession()
+      await refreshPosts()
+      if (!active) return
+      navigation.replace(session?.token ? 'Main' : 'Login')
+    })()
+    return () => {
+      active = false
+    }
+  }, [navigation, refreshPosts, restoreAuthSession])
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
