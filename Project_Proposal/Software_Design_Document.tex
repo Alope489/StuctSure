@@ -36,7 +36,7 @@
 
 \vspace{2cm}
 
-{\large Version 1.1}
+{\large Version 1.2}
 
 \vspace{3cm}
 
@@ -72,7 +72,11 @@ Florida International University
 \hline
 1.0 & \raggedright Andres Stephen Lopez\\ Nicole Fonseca\\ Logan Pritchard\\ Grace Hechavarria & Initial Release & January 18, 2026 \\
 \hline
-1.1 & \raggedright Andres Stephen Lopez\\ Nicole Fonseca\\ Logan Pritchard\\ Grace Hechavarria & Added Section 5, Extended Motivation and Acknowledgments & February 7, 2026 \\
+1.1 & \raggedright Andres Stephen Lopez\\ Nicole Fonseca\\ Logan Pritchard\\ Grace Hechavarria & Added Section 5, Extended Introduction and Acknowledgments & February 7, 2026 \\
+\hline
+1.2 & \raggedright Andres Stephen Lopez\\ Logan Pritchard& Added Section 6 & March 22, 2026 \\
+\hline
+1.3 & \raggedright Andres Stephen Lopez & Added Section 7, restructured the sprint planning section to reflect the actual work timeline, standardized legacy backend references to Supabase, and changed the prior admin email sprint direction to social feature expansion because of legal restrictions on the proposed approach. & April 12, 2026 \\
 \hline
 \end{tabular}
 \end{table}
@@ -105,7 +109,7 @@ Primary users (stakeholders) include residents and tenants who report infrastruc
 
 The application is characterized by: (1) \textbf{mobile-first/native}, a React Native (Expo) app as the primary interface; (2) \textbf{camera-only capture}, no gallery or file upload, so only real-time photos can be submitted to reduce spoofing and abuse; and (3) \textbf{building-linked issue records}, each report tied to a specific building via location and optional building selection, so that issues are documented per building and visible to residents, associations, and the public.
 
-Unlike generic social media platforms or complaint systems, this tool combines Instagram-like ease of use with specific accountability features. The application requires real-time photo capture using only the camera (no gallery access) to prevent spoofing and defamation. Photos are automatically linked to locations via geo-location services. The system uses Google Places API to identify nearby buildings, allowing users to select from two to three nearby buildings if the location is imprecise. Users have blog-style accounts without real name requirements. Each building maintains a record of all posts related to it. The platform automatically sends persistent notifications and emails to associations using publicly available contact information. This design prevents mass uploading of old or edited images and fake accounts from posting preset galleries to damage a building's reputation.
+Unlike generic social media platforms or complaint systems, this tool combines Instagram-like ease of use with specific accountability features. The application requires real-time photo capture using only the camera (no gallery access) to prevent spoofing and defamation. Photos are automatically linked to locations via geo-location services. The system uses Google Places API to identify nearby buildings, allowing users to select from two to three nearby buildings if the location is imprecise. Users have blog-style accounts without real name requirements. Each building maintains a record of all posts related to it. The platform provides persistent in-app notifications and public visibility of issue activity. This design prevents mass uploading of old or edited images and fake accounts from posting preset galleries to damage a building's reputation.
 
 The tool creates a public record of infrastructure issues tied to specific buildings, making it difficult for associations to claim ignorance. It enables accountability through persistent notifications and public visibility. Municipalities and third parties can track building conditions and compliance. This transparency may lead to faster response times from associations and improved infrastructure maintenance overall.
 
@@ -136,17 +140,12 @@ In version 1.1, we also acknowledge the use of ChatGPT by team members Grace Hec
 \subsection{References}
 
 \begin{itemize}[leftmargin=0.5in, itemindent=-0.5in, labelsep=0in]
-\item Cloudinary. (n.d.). \textit{Image upload API reference}. Retrieved from \url{https://cloudinary.com/documentation/image_upload_api_reference}
-
 \item Expo. (n.d.). \textit{Expo Camera SDK documentation}. Retrieved from \url{https://docs.expo.dev/versions/latest/sdk/camera/}
 
 \item Google. (n.d.). \textit{Firebase Authentication}. In \textit{Firebase Documentation}. Retrieved from \url{https://firebase.google.com/docs/auth}
 
 \item Google. (n.d.). \textit{Places API}. In \textit{Google Maps Platform Documentation}. Retrieved from \url{https://developers.google.com/maps/documentation/places}
 
-\item misskey-dev. (n.d.). \textit{Misskey} [Computer software]. GitHub. \url{https://github.com/misskey-dev/misskey}
-
-\item Twilio SendGrid. (n.d.). \textit{SendGrid v3 API reference}. In \textit{Twilio SendGrid Docs}. Retrieved from \url{https://docs.sendgrid.com/api-reference}
 \end{itemize}
 
 \newpage
@@ -162,15 +161,15 @@ In version 1.1, we also acknowledge the use of ChatGPT by team members Grace Hec
 
 Figure \ref{fig:system_architecture} above represents the architectural structure chosen for the development of the Infrastructure Degradation Management Platform. The system follows a three-tier architecture consisting of a database layer, back-end layer, and front-end layer.
 
-The database layer utilizes PostgreSQL for persistent data storage of users, buildings, and reported issues, while Redis provides caching capabilities for improved performance. The back-end layer is built on Misskey, a Node.js and TypeScript-based social networking platform that provides fast, efficient infrastructure with built-in user management, post/timeline features, and database integration. To accommodate team members more familiar with Python, a Python API wrapper interfaces with the Misskey backend, allowing Python-based development while maintaining the core Misskey functionality.
+The database layer utilizes PostgreSQL for persistent data storage of users, buildings, and reported issues, while Redis provides caching capabilities for improved performance. The back-end layer is built on Supabase, a Node.js and TypeScript-based social networking platform that provides fast, efficient infrastructure with built-in user management, post/timeline features, and database integration. To accommodate team members more familiar with Python, a Python API wrapper interfaces with the Supabase backend, allowing Python-based development while maintaining the core Supabase functionality.
 
 The front-end layer consists of a React Native mobile application built with the Expo SDK, which provides camera and location APIs for photo capture and GPS coordinate retrieval. The mobile app communicates with the back-end through the Python API wrapper via HTTP/HTTPS requests.
 
-The system integrates with several external services: Cloudinary for photo storage and processing, Google Places API for building identification based on GPS coordinates, Firebase Authentication for user account management, and SendGrid for email notifications to property associations. Currently, the notification system sends emails to associations when new issues are reported, though this can be extended to support additional notification methods in the future.
+The system integrates with several external services: Supabase for data and media storage, Google Places API for building identification based on GPS coordinates, and Firebase Authentication for user account management. The current notification flow centers on in-app and public-facing status propagation; outbound association email integration is treated as future scope.
 
 Storing information about users, buildings, and reported issues enables the system to maintain building records, track issue timelines, and manage notification history. User information enables the system to maintain user profiles and keep records of their reported issues.
 
-Additionally, by following this architecture and structure, the system can be extended into additional features such as municipality dashboards, public record exports, and enhanced notification systems beyond email. However, this is out of the scope of this project and will be addressed in a future version.
+Additionally, by following this architecture and structure, the system can be extended into additional features such as municipality dashboards, public record exports, and external escalation channels (including association email integrations). However, this is out of the scope of this project and will be addressed in a future version.
 
 \section{System Components}
 
@@ -187,17 +186,17 @@ Figure \ref{fig:decomposition} above shows a top-down description of how the app
 
 The \textbf{UI Controller} is the main entry point for users, implemented as a React Native mobile application with the Expo SDK. It provides methods for capturing photos/videos, attaching location data, submitting reports, viewing status, and managing notifications.
 
-The \textbf{StructSure Core} serves as the central orchestrator, implemented using the Misskey backend framework with a Python API wrapper. It coordinates interactions between all system components and manages the overall application flow.
+The \textbf{StructSure Core} serves as the central orchestrator, implemented using the Supabase backend framework with a Python API wrapper. It coordinates interactions between all system components and manages the overall application flow.
 
-The \textbf{Reporting API} handles report management and is implemented as part of the Misskey backend with Python API interfaces. It provides methods for creating reports, updating reports, adding evidence, listing reports, and exporting/sharing reports.
+The \textbf{Reporting API} handles report management and is implemented as part of the Supabase backend with Python API interfaces. It provides methods for creating reports, updating reports, adding evidence, listing reports, and exporting/sharing reports.
 
 The \textbf{Session Manager} manages user authentication, implemented using Firebase Authentication. It provides methods for sign up, login, logout, and user validation.
 
 The \textbf{Geo/Map Controller} handles geographical and map-related operations, integrating with the Google Places API. It provides methods to render maps, add markers, and show directions for building identification.
 
-The \textbf{Resident Profile} manages resident-specific data including identity, address, association information, and notification preferences. This component utilizes the user management capabilities of Misskey.
+The \textbf{Resident Profile} manages resident-specific data including identity, address, association information, and notification preferences. This component utilizes the user management capabilities of Supabase.
 
-The \textbf{Degradation Analyzer} performs analysis on reported issues to assess severity, detect duplicates, and prioritize cases. This component implements custom logic within the Misskey backend to analyze infrastructure degradation patterns.
+The \textbf{Degradation Analyzer} performs analysis on reported issues to assess severity, detect duplicates, and prioritize cases. This component implements custom logic within the Supabase backend to analyze infrastructure degradation patterns.
 
 The \textbf{Database Manager} handles all data persistence, implemented using PostgreSQL for persistent storage and Redis for caching. It provides methods to add/update users and reports, retrieve reports, and delete reports.
 
@@ -212,11 +211,11 @@ The \textbf{Database Manager} handles all data persistence, implemented using Po
 
 Figure \ref{fig:dependency} above represents the component diagram of the system and how each module is dependent on another for its functionality. This diagram illustrates the logical flow and dependencies between components, which are implemented using the technology stack described in Section 2.
 
-The UI Controller, implemented as a React Native mobile application, initiates user interactions and communicates with the StructSure Core, which serves as the central processing unit implemented using Misskey with a Python API wrapper. The StructSure Core orchestrates interactions with specialized components: the Reporting API for managing issue reports, the Session Manager (Firebase Authentication) for user authentication, the Geo/Map Controller (Google Places API integration) for location and mapping services, and the Degradation Analyzer for analyzing reported infrastructure issues.
+The UI Controller, implemented as a React Native mobile application, initiates user interactions and communicates with the StructSure Core, which serves as the central processing unit implemented using Supabase with a Python API wrapper. The StructSure Core orchestrates interactions with specialized components: the Reporting API for managing issue reports, the Session Manager (Firebase Authentication) for user authentication, the Geo/Map Controller (Google Places API integration) for location and mapping services, and the Degradation Analyzer for analyzing reported infrastructure issues.
 
-The Session Manager handles user authentication through Firebase Authentication and communicates directly with the Database Manager (PostgreSQL) to store and retrieve user session data. The Geo/Map Controller processes location information through the Google Places API and stores geographical data in the Database Manager. The Degradation Analyzer processes reported issues and interacts with the Resident Profile component, which manages resident information using Misskey's user management features and also stores data in the Database Manager.
+The Session Manager handles user authentication through Firebase Authentication and communicates directly with the Database Manager (PostgreSQL) to store and retrieve user session data. The Geo/Map Controller processes location information through the Google Places API and stores geographical data in the Database Manager. The Degradation Analyzer processes reported issues and interacts with the Resident Profile component, which manages resident information using Supabase's user management features and also stores data in the Database Manager.
 
-The Reporting API, implemented through the Misskey backend and Python API wrapper, creates report posts that are stored in the Database Manager. When photos are captured through the UI Controller, they are uploaded to Cloudinary for storage and processing. When new issue reports are created, the system retrieves association contact information from the database and sends email notifications via SendGrid.
+The Reporting API, implemented through the Supabase backend and Python API wrapper, creates report posts that are stored in the Database Manager. When photos are captured through the UI Controller, they are uploaded to Supabase for storage and processing. When new issue reports are created, the system records and propagates notification events through in-app and public activity surfaces.
 
 The Database Manager serves as the central data persistence layer, implemented using PostgreSQL for persistent storage and Redis for caching. It receives data from the Session Manager, Geo/Map Controller, and Resident Profile components. All user data, building records, reported issues, and associated information are stored in the database to maintain system state and enable retrieval of historical data.
 
@@ -312,7 +311,7 @@ Figure \ref{fig:degradation_analyzer} above shows the Degradation Analyzer inter
 \label{fig:association_management}
 \end{figure}
 
-Figure \ref{fig:association_management} above shows the Association Management interface. The current implementation sends email notifications via SendGrid when new issues are reported. Advanced features such as persistent scheduling, escalation workflows, and comprehensive dashboards are outside the scope of this project, as mentioned in Section 2.
+Figure \ref{fig:association_management} above shows the Association Management interface. The current implementation focuses on public record visibility and in-app notification propagation. External association email delivery workflows are intentionally deferred as future scope due to legal and compliance constraints discussed in Section 2.
 
 \subsubsection{Public Visibility}
 
@@ -439,13 +438,13 @@ If permission granted:
     If location permission granted:
         Get current GPS coordinates
         Extract EXIF metadata from photo
-        Upload photo to Cloudinary with metadata
+        Upload photo to Supabase with metadata
         Query Google Places API with GPS coordinates
         Display nearby building options to user
         Wait for user to select building
         Create issue post with photo URL, building ID, and metadata
         Store post in database
-        Trigger notification to association
+        Trigger in-app/public notification event
     Else:
         Display error: Location permission required
 Else:
@@ -454,12 +453,12 @@ Else:
 
 \subsection{Data Detailed Design}
 
-The system database extends Misskey's existing schema with the following main tables:
+The system database extends Supabase's existing schema with the following main tables:
 
 \begin{itemize}
     \item \textbf{Buildings Table}: Stores building information including name, address, GPS coordinates, Google Place ID, and association contact information.
-    \item \textbf{Posts Table (Extended)}: Misskey's posts table extended with building association, issue category, severity rating, status, and location data.
-    \item \textbf{Notifications Table}: Tracks email notifications sent to associations including recipient, timestamp, delivery status, and retry information.
+    \item \textbf{Posts Table (Extended)}: Supabase's posts table extended with building association, issue category, severity rating, status, and location data.
+    \item \textbf{Notifications Table}: Tracks notification events linked to issue updates, including recipient context, timestamp, and state transitions.
 \end{itemize}
 
 \subsection{RTM}
@@ -468,28 +467,29 @@ The system database extends Misskey's existing schema with the following main ta
 \hline
 \textbf{Requirement-ID} & \textbf{Requirement Description} & \textbf{Design Component} & \textbf{Test-Case \#} \\
 \hline
-FR-1 & User account creation with blog-style registration & Session Manager, User Profile & TBD \\
+FR-1 & User account creation with blog-style registration & Session Manager, User Profile & 1--5 \\
 \hline
-FR-2 & Camera-only photo capture (no gallery access) & Photo Capture Component & TBD \\
+FR-2 & Camera-only photo capture (no gallery access) & Photo Capture Component & 6--8 \\
 \hline
-FR-3 & Real-time geo-location capture and tagging & Photo Capture Component, Building Management & TBD \\
+FR-3 & Real-time geo-location capture and tagging & Photo Capture Component, Building Management & 12--14 \\
 \hline
-FR-4 & Building identification via Google Places API & Building Management Component & TBD \\
+FR-4 & Building identification via Google Places API & Building Management Component & 18--20 \\
 \hline
-FR-5 & Issue post creation linked to buildings & Photo Capture Component, Database Manager & TBD \\
+FR-5 & Issue post creation linked to buildings & Photo Capture Component, Database Manager & 9--11, 15--17 \\
 \hline
-FR-6 & Automated association notifications & Notification System & TBD \\
+FR-6 & Automated association notifications & Notification System & 24--27 \\
 \hline
-FR-7 & Public building records view & Public Access Component & TBD \\
+FR-7 & Public building records view & Public Access Component & 21--23 \\
 \hline
-FR-8 & Municipality dashboard & Public Access Component & TBD \\
+FR-8 & Municipality dashboard & Public Access Component & N/A \\
 \hline
-FR-9 & Photo validation and abuse prevention & Photo Capture Component, Validation Module & TBD \\
+FR-9 & Photo validation and abuse prevention & Photo Capture Component, Validation Module & 28--30 \\
 \hline
 \end{tabular}
 
 \newpage
 \section{Sprint Planning}
+This section was revised in version 1.3 to no longer include implementation of admin-email outreach. In some states, using web scraping to acquire administration contact information can involve Personally Identifiable Information (PII) and introduce legal risk. As a result, that effort was deferred to future scope and replaced with social feature expansion in the implemented sprint work.
 
 \setlist[enumerate]{topsep=0pt, partopsep=0pt, parsep=0pt, itemsep=2pt, leftmargin=1.5em}
 
@@ -506,9 +506,9 @@ Grace Hechevarria & Frontend / UI Implementation Lead & Primary owner of React N
 \hline
 Nicole Fonseca & Frontend Integration \& Validation Lead & Handles permission flows, validation messages, session UI, error handling, and frontend protection \\
 \hline
-Logan Pritchard & Frontend Data Integration Lead & Connects UI to Google Places, Cloudinary, SendGrid responses, and manages data display \\
+Logan Pritchard & Frontend Data Integration Lead & Connects UI to Google Places and Supabase responses, and manages data display \\
 \hline
-Andres Lopez & Backend Architecture \& API Lead & Owns Misskey backend, Python API wrapper, database schema, endpoints, issue logic, and notification triggers \\
+Andres Lopez & Backend Architecture \& API Lead & Owns Supabase backend, Python API wrapper, database schema, endpoints, issue logic, and notification triggers \\
 \hline
 \end{tabular}
 
@@ -529,10 +529,10 @@ Andres Lopez & Backend Architecture \& API Lead & Owns Misskey backend, Python A
 \textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
 \hline
 Sprint 1 & 02/08 -- 02/14 &
-As a new user, I want to create an account with a username and optional email, so that I can use the system without strict verification. &
+As a new user, I want to create an account with a username and email, so that I can use the system with strict verification. &
 \begin{enumerate}
-    \item Verify that a user can register with a username and password.
-    \item Verify that email is optional.
+    \item Verify that a user can register with a username, email, and password.
+    \item Verify email.
     \item Verify that usernames are unique.
     \item Verify that successful registration logs the user in.
 \end{enumerate} \\
@@ -542,7 +542,7 @@ As a user, I want to log in and log out, so that my account remains secure. &
 \begin{enumerate}
     \item Verify that users can log in with valid credentials.
     \item Verify that logging out ends the session.
-    \item Verify that protected routes require authentication.
+
 \end{enumerate} \\
 \hline
 \end{tabular}
@@ -606,7 +606,7 @@ Andres & Backend endpoint to receive image data \\
 \vspace{2em}
 
 %%% SPRINT 3 %%%
-\noindent{\textbf{\large Sprint 3 -- Automatic Upload to Cloudinary}}
+\noindent{\textbf{\large Sprint 3 -- Automatic Upload to Supabase on Successful Post}}
 
 \vspace{0.5em}
 
@@ -618,7 +618,7 @@ Andres & Backend endpoint to receive image data \\
 Sprint 3 & 02/16 -- 02/22 &
 As a user, I want my photo to upload immediately after capture, so that it is securely stored with metadata. &
 \begin{enumerate}
-    \item Verify that upload starts automatically after capture.
+    \item Verify that upload starts automatically after being posted.
     \item Verify that uploads include a server-side timestamp.
     \item Verify that users can see whether the upload succeeds or fails.
 \end{enumerate} \\
@@ -636,7 +636,7 @@ Grace & Upload progress and success/failure display \\
 \hline
 Nicole & Frontend validation if upload fails \\
 \hline
-Logan & Connect UI to Cloudinary response data \\
+Logan & Connect UI to Supabase response data \\
 \hline
 Andres & Implement upload handling, timestamps, and metadata storage \\
 \hline
@@ -657,7 +657,7 @@ Andres & Implement upload handling, timestamps, and metadata storage \\
 Sprint 4 & 02/23 -- 03/01 &
 As a user, I want my GPS location captured when I take a photo, so that issues show where it happened. &
 \begin{enumerate}
-    \item Verify that location permission is requested.
+    \item Verify that current location is requested if no nearby buildings are found.
     \item Verify that submissions without GPS data are blocked.
     \item Verify that valid latitude and longitude values are stored.
 \end{enumerate} \\
@@ -684,7 +684,7 @@ Andres & Store GPS data and attach to issue metadata \\
 \vspace{2em}
 
 %%% SPRINT 5 %%%
-\noindent{\textbf{\large Sprint 5 -- Building Identification with Google Places}}
+\noindent{\textbf{\large Sprint 5 -- Issue Creation and Building History}}
 
 \vspace{0.5em}
 
@@ -694,51 +694,6 @@ Andres & Store GPS data and attach to issue metadata \\
 \textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
 \hline
 Sprint 5 & 03/02 -- 03/08 &
-As a user, I want to see nearby buildings suggested, so that I can accurately tag an issue. &
-\begin{enumerate}
-    \item Verify that nearby buildings are retrieved using GPS coordinates.
-    \item Verify that results include building name and address.
-\end{enumerate} \\
-\cline{3-4}
-& &
-As a user, I want to select the correct building, so that the issue is linked accurately. &
-\begin{enumerate}
-    \item Verify that a building can be selected from the suggestion list.
-    \item Verify that the selected building is stored with the issue.
-\end{enumerate} \\
-\hline
-\end{tabular}
-
-\vspace{0.5em}
-
-\noindent
-\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
-\hline
-\textbf{Team Member} & \textbf{Task} \\
-\hline
-Grace & Building selection interface \\
-\hline
-Nicole & Validation if no building is selected \\
-\hline
-Logan & Display nearby buildings using API data \\
-\hline
-Andres & Process and store building ID with issue \\
-\hline
-\end{tabular}
-
-\vspace{2em}
-
-%%% SPRINT 6 %%%
-\noindent{\textbf{\large Sprint 6 -- Issue Creation \& Building History}}
-
-\vspace{0.5em}
-
-\noindent
-\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
-\hline
-\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
-\hline
-Sprint 6 & 03/09 -- 03/15 &
 As a user, I want to create an issue with a photo and building, so that infrastructure problems are documented. &
 \begin{enumerate}
     \item Verify that issue records store photo, building, timestamp, and user ID.
@@ -773,8 +728,54 @@ Andres & Build issue creation endpoint and database schema \\
 
 \vspace{2em}
 
+%%% SPRINT 6 %%%
+\noindent{\textbf{\large Sprint 6 -- Building Identification with Google Places}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 6 & 03/09 -- 03/15 &
+As a user, I want to see nearby buildings suggested, so that I can accurately tag an issue. &
+\begin{enumerate}
+    \item Verify that nearby buildings are retrieved using GPS coordinates.
+    \item Verify that results include building name and address.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to select the correct building, so that the issue is linked accurately. &
+\begin{enumerate}
+    % \item Verify that a building can be selected from the suggestion list.
+    \item Verify that the selected building is stored with the issue.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Building selection interface \\
+\hline
+Nicole & Validation if no building is selected \\
+\hline
+Logan & Display nearby buildings using API data \\
+\hline
+Andres & Process and store building ID with issue \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+
+
 %%% SPRINT 7 %%%
-\noindent{\textbf{\large Sprint 7 -- Association Email Notifications}}
+\noindent{\textbf{\large Sprint 7 -- Public Building Profile and Search}}
 
 \vspace{0.5em}
 
@@ -784,11 +785,55 @@ Andres & Build issue creation endpoint and database schema \\
 \textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
 \hline
 Sprint 7 & 03/16 -- 03/22 &
-As the system, I want to notify associations when an issue is posted, so that they're aware and can take action. &
+As a member of the public, I want to view building issue records, so that transparency is maintained. &
 \begin{enumerate}
-    \item Verify that emails are sent on issue creation.
-    \item Verify that emails include issue details and links.
-    \item Verify that failed notifications are logged.
+    \item Verify that public building pages are accessible.
+\end{enumerate} \\
+\cline{3-4}
+& &
+As a user, I want to search and filter building issues, so that I can find relevant records efficiently. &
+\begin{enumerate}
+    \item Verify that buildings can be searched by name or address.
+    \item Verify that issues can be filtered by tag or location.
+\end{enumerate} \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
+\hline
+\textbf{Team Member} & \textbf{Task} \\
+\hline
+Grace & Public building view screens \\
+\hline
+Nicole & Ensure UI hides private user data \\
+\hline
+Logan & Search UI and results display \\
+\hline
+Andres & Build public endpoints and secure data filtering \\
+\hline
+\end{tabular}
+
+\vspace{2em}
+%%% SPRINT 8 %%%
+\noindent{\textbf{\large Sprint 8 -- Comments, Upvotes, and Social Features}}
+
+\vspace{0.5em}
+
+\noindent
+\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
+\hline
+Sprint 8 & 03/23 -- 03/29 &
+As a user, I want social interactions to generate visible engagement updates, so that activity is transparent across accounts. &
+\begin{enumerate}
+    \item Verify that upvotes propagate to all remote users and provide notifications.
+    \item Verify that comments propagate to all remote users and provide notifications.
+    \item Verify that comments and upvotes can be deleted/removed.
+    \item Verify that users have a customizable social profile that keeps track of their engagement.
 \end{enumerate} \\
 \hline
 \end{tabular}
@@ -804,16 +849,16 @@ Grace & Notification status UI \\
 \hline
 Nicole & Error/status messages for notifications \\
 \hline
-Logan & Display association contact/notification results \\
+Logan & Display cross-account notification and activity results \\
 \hline
-Andres & Trigger SendGrid emails and log results \\
+Andres & Implement social-event notification propagation and logging \\
 \hline
 \end{tabular}
 
 \vspace{2em}
 
-%%% SPRINT 8 %%%
-\noindent{\textbf{\large Sprint 8 -- Abuse Prevention \& Validation}}
+%%% SPRINT 9 %%%
+\noindent{\textbf{\large Sprint 9 -- Abuse Prevention \& Validation}}
 
 \vspace{0.5em}
 
@@ -822,7 +867,7 @@ Andres & Trigger SendGrid emails and log results \\
 \hline
 \textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
 \hline
-Sprint 8 & 03/23 -- 03/29 &
+Sprint 9 & 03/30 -- 04/05 &
 As the system, I want to limit submissions per user, so that spam and abuse are reduced. &
 \begin{enumerate}
     \item Verify that daily submission limits are enforced.
@@ -832,7 +877,7 @@ As the system, I want to limit submissions per user, so that spam and abuse are 
 & &
 As the system, I want to detect duplicate photo uploads, so that repeated spam is prevented. &
 \begin{enumerate}
-    \item Verify that duplicate images are detected using file hashing.
+    \item Verify that duplicate images are detected.
     \item Verify that duplicate submissions are blocked or flagged.
 \end{enumerate} \\
 \hline
@@ -857,50 +902,6 @@ Andres & Implement submission limits and hashing logic \\
 
 \vspace{2em}
 
-%%% SPRINT 9 %%%
-\noindent{\textbf{\large Sprint 9 -- Public Building View \& Search}}
-
-\vspace{0.5em}
-
-\noindent
-\begin{tabular}{|L{1.2cm}|L{1.8cm}|L{5.2cm}|L{6.3cm}|}
-\hline
-\textbf{Sprint} & \textbf{Dates} & \textbf{User Stories} & \textbf{Acceptance Criteria} \\
-\hline
-Sprint 9 & 03/30 -- 04/05 &
-As a member of the public, I want to view building issue records without logging in, so that transparency is maintained. &
-\begin{enumerate}
-    \item Verify that public building pages are accessible without authentication.
-    \item Verify that no private user data is exposed.
-\end{enumerate} \\
-\cline{3-4}
-& &
-As a user, I want to search and filter building issues, so that I can find relevant records efficiently. &
-\begin{enumerate}
-    \item Verify that buildings can be searched by name or address.
-    \item Verify that issues can be filtered by date or status.
-\end{enumerate} \\
-\hline
-\end{tabular}
-
-\vspace{0.5em}
-
-\noindent
-\begin{tabular}{|L{2.5cm}|L{12.5cm}|}
-\hline
-\textbf{Team Member} & \textbf{Task} \\
-\hline
-Grace & Public building view screens \\
-\hline
-Nicole & Ensure UI hides private user data \\
-\hline
-Logan & Search UI and results display \\
-\hline
-Andres & Build public endpoints and secure data filtering \\
-\hline
-\end{tabular}
-
-\vspace{2em}
 
 \begin{figure}[H]
 \centering
@@ -908,5 +909,538 @@ Andres & Build public endpoints and secure data filtering \\
 \caption{StructSure project burndown chart. A burndown chart shows remaining work over time so the team can track progress and predict completion.}
 \label{fig:burndown}
 \end{figure}
+\section{Design}
 
-\end{document}
+\subsection{Definition of Design}
+
+Design in software engineering converts needs into a complete system operational blueprint. The design establishes system architecture together with its main elements and their interconnections which will be built during the upcoming implementation phase. The design phase provides a development blueprint through which developers will proceed their work. Sommerville (2021) defines software design as a process that determines system elements and their interconnections to facilitate both building and testing of the system.
+
+\subsection{Design Process}
+
+Our team followed a straightforward design process based on the project requirements and sprint plan.
+
+First, we reviewed the Software Design Document and the sprint schedule to understand the purpose of StructSure and the main features the system needed to support. From this, we identified the main users of the system: tenants, property associations, municipalities, and members of the public.
+
+Next, we focused on the central workflow of the application, which is the reporting of infrastructure issues. The core flow of StructSure is:
+\begin{enumerate}
+    \item User logs into the application
+    \item User captures a photo using the in-app camera
+    \item The system captures GPS location
+    \item The system shows nearby buildings
+    \item The user selects the correct building
+    \item The user submits issue details
+    \item The system stores the issue and sends notifications
+\end{enumerate}
+
+The team established the diagrammatic representation after they had defined the workflow. The first step involved creating a use case diagram which displayed all main actors together with their corresponding activities. The activity diagram showed all steps which lead to the reporting process. The sequence diagram demonstrated all system components which work together during the submission of issues. 
+
+The class diagram demonstrated all primary system objects together with their various connections. The design phase concluded with a complete diagram review process which verified consistent term usage and project requirements compliance across all diagrams.
+
+\subsection{Graphical Representation of the Design}
+
+\subsubsection{Use Case Diagram}
+
+The use case diagram shows the main actors in StructSure and the main actions they perform. The primary actor is the tenant, who can create an account, log in, submit an issue report, and view issue history. Other important actors are the property association, the municipality, and the notification system.
+
+The most important use case in the system is \textit{Submit Issue Report}. This use case includes capturing a photo, capturing GPS location, and selecting a building. These steps are essential because StructSure is designed to create reliable and location-linked issue reports.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{design_diagrams/Structsure Use Case.jpg}
+    \caption{StructSure Use Case Diagram}
+\end{figure}
+
+\FloatBarrier
+
+\subsubsection{Activity Diagram}
+
+The activity diagram shows the full workflow of issue reporting. It begins when the user opens the camera and continues through permission checks, photo capture, location capture, building selection, issue submission, validation, storage, and notification.
+
+This diagram was useful because it allowed the team to clearly model decision points such as denied permissions, invalid input, or failed validation. It also helped us visualize the order in which actions happen during issue submission.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=0.9\textheight, keepaspectratio]{design_diagrams/Structsure Activity Diagram.png}
+    \caption{StructSure Activity Diagram}
+\end{figure}
+
+\FloatBarrier
+
+\subsubsection{Class Diagram}
+
+The class diagram shows the structure of the system and the relationships between the main classes. The major classes in StructSure include User, Tenant, IssueReport, Building, Location, PhotoEvidence, Notification, Association, and Municipality. Supporting classes such as SessionManager, IssueReportController, and NotificationService were also included to represent system control and coordination.
+
+The class diagram helped the team define the data structure of the system and understand how the main objects are connected. For example, a tenant can create multiple issue reports, each issue report is linked to one building, and each issue report contains one photo and one location.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{design_diagrams/Structsure Class Diagram.jpg}
+    \caption{StructSure Class Diagram}
+\end{figure}
+
+\FloatBarrier
+
+\subsubsection{Sequence Diagram}
+
+The sequence diagram shows how the system behaves when a user submits an issue. It focuses on the order of interaction between the user, the user interface, the issue report controller, and other system components.
+
+The diagram begins when the user starts the issue reporting process. The interface passes the request to the controller, the controller validates the submission, handles the photo and building information, creates the issue report, stores the data, and triggers a notification. This diagram helped the team understand the internal flow of the system and how information moves between components.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{design_diagrams/Structsure Sequence Diagram.jpg}
+    \caption{StructSure Sequence Diagram}
+\end{figure}
+
+\FloatBarrier
+
+\subsection{Rationale Management}
+
+Rationale management explains why design decisions were made. In this project, it was important because the team had to adapt general diagram templates into a system that specifically matched StructSure. Keeping track of the reasoning behind our design choices helped us stay consistent and avoid unnecessary complexity.
+
+\subsubsection{Issues Addressed}
+
+The first issue we addressed was reliability. StructSure is meant to document real infrastructure problems, so the design had to reduce false or misleading reports. This is why the system uses camera-only capture, GPS tagging, and building selection.
+
+The second issue was supporting multiple types of users. Tenants, associations, and municipalities all interact with the system differently, so the design had to account for multiple roles and responsibilities. Although we have stated that we will not implement a municipality dashboard in this iteration of the project, we still account for the role as they are the ones being tagged in the process. 
+
+The third issue was keeping the diagrams consistent. Since the team began by adapting example templates, we had to remove unrelated features and replace them with StructSure-specific terms and relationships.
+
+\subsubsection{Alternatives Considered}
+
+One alternative was to make the design very detailed by adding many extra technical classes and services. Another alternative was to keep the design simple and only include the most important elements needed to explain the system.
+
+For most of the design, the team chose the simpler option. We only added classes and relationships that were necessary to make the diagrams accurate and coherent.
+
+\subsubsection{Decisions Made}
+
+The main decision was to center the design around the issue submission workflow, since that is the core function of StructSure. Because of that, all systems have been built around the same general process: capture evidence, identify the building, create an issue report, store it, and notify the responsible association.
+
+We also decided that photo capture, GPS collection, and building selection should be treated as required parts of issue submission rather than optional actions. This made the application infrastructure more consistent with the goals of the project.
+
+For the classes, we decided not to overload the design with extra classes. Instead, we kept the existing core and only added missing classes such as IssueReport, Building, Location, PhotoEvidence, SeverityRating, and Notification where needed.
+
+\subsubsection{Criteria Used to Guide Decisions}
+
+The team used a few main criteria to guide design decisions:
+\begin{itemize}
+    \item The design had to match the project requirements
+    \item The diagrams had to be easy to understand
+    \item Terms and relationships had to stay consistent across all diagrams
+    \item The design needed to be detailed enough to be useful, but not so detailed that it became confusing or restricted our ability to adapt if something failed to match the design we proposed.
+\end{itemize}
+
+\subsubsection{Developer Debate and Final Resolution}
+
+The main debate during the design process was whether the the application requirements should be highly detailed or more simplified. Some team members preferred including more technical detail, while others preferred a clearer and more readable design.
+
+The final decision was to strike a balance. We kept the core system structure and added only the most important missing classes, actions, and relationships. This gave us diagrams that were accurate, easier to follow, and still useful for implementation. It also met the criteria of keeping our design flexible so that we could adapt on the fly is something fell short of what we had anticipated.
+
+\newpage
+\section{Verification}
+Verification in software is defined by the IEEE 1012-2012/2016 Standard as "The process of evaluating software to determine whether the products of a given development phase satisfy the conditions imposed at the start of that phase"(IEEE, 2024).
+
+In our verification processes we took the perspective of a user and walked through the various tasks that they may perform while using the application, the errors they might encounter, and the limitations put in place by our architecture thay may restrict them. In the tables below we denote the steps we took, the results we recieved. The figures cited in the tables show those results or show the implication that binds or affirms them. 
+
+% ---------------- TABLE ----------------
+\subsection{Sprint 1 - Account Creation and Login}
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.35\linewidth} p{0.45\linewidth} p{0.15\linewidth}}
+\toprule
+\textbf{Process} & \textbf{Verification} & \textbf{Figure} \\
+\midrule
+\textbf{(1)} We attempt to create an account using an already taken username and separately we attempt to create account with an already taken we email. We receive two distinct errors from each of the attempts. We also enforce a strict schema that keeps the values unique via Supabase which we verify by entering the Supabase portal &
+Verify usernames are unique; verify registration with username, email, and password &
+Fig.~\ref{fig:db}, Fig.\ref{fig:account_errors}\\
+
+\textbf{(2)} We apply to create an account with a new email where we receive a email verification email. Once verified the account performs an auto login to the home feed. &
+Verify email confirmation step is required and completed &
+Fig.~\ref{fig:auth_flow} \\
+
+\textbf{(3)} After verifying the email, the app will receive a refresh and direct the user to the home feed. &
+Verify successful registration logs the user in &
+Fig.~\ref{fig:logout} \\
+
+\textbf{(4)} We attempt to log in with the newly verified account after signing out. We are permitted access back into the application&
+Verify users can log in with valid credentials &
+Fig.~\ref{fig:auth_flow} \\
+
+\textbf{(5)} Session termination (logout) &
+Verify logging out ends the session &
+Fig.~\ref{fig:logout} \\
+\bottomrule
+\end{tabular}
+\caption{User authentication and verification requirements with corresponding validation steps.}
+\label{tab:auth_requirements}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Verification/database.png}
+    \caption{Database schema enforcing username uniqueness.}
+    \label{fig:db}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth,height=7cm]{Verification/sign_in.jpg}%
+    \includegraphics[width=0.4\textwidth,height=7cm]{Verification/sign_up_submitted.jpg}%
+    \includegraphics[width=0.2\textwidth,height=7cm]{Verification/verify_email.jpg}
+    \caption{Sign up/sign in with email verification step.}
+    \label{fig:auth_flow}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/username_error.jpg}%
+    \includegraphics[height=9cm]{Verification/email_error.jpg}
+    \caption{shows taken username and email account errors}
+    \label{fig:account_errors}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/home_page_empty.jpg}%
+    \includegraphics[height=9cm]{Verification/sign_out_1.jpg}
+    \caption{Post email verification login and logout flow.}
+    \label{fig:logout}
+\end{figure}
+
+% ---------------- TABLE sprint 2 ----------------
+\subsection{Sprint 2 - Camera-Only Photo Capture}
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.35\linewidth} p{0.45\linewidth} p{0.15\linewidth}}
+\toprule
+\textbf{ Verification Process} & \textbf{Verification Objective} & \textbf{Figure} \\
+\midrule
+\textbf{(6)} We open the application and go to the new post creation tab. We see the "grant camera access" button on first user sign in, which requests camera permissions to the device&
+Verify that camera permission is requested. &
+Fig.~\ref{fig:camera_access} \\
+
+\textbf{(7)} We press the button and ensure the \textbf{ONLY} the camera permissions are requested without camera gallery permissions &
+Verify that no gallery or file upload option exists &
+Fig.~\ref{fig:camera_access} \\
+
+\textbf{(8)} We proceed to post creation and ensure that taking a photo directly in the application window is the \textbf{ONLY} method/option available &
+Verify that photos come directly from the camera API. &
+Fig.~\ref{fig:camera_access} \\
+
+\bottomrule
+\end{tabular}
+\caption{Camera access testing process and constraint verification}
+\label{tab:camera_access}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/camera_permission.jpg}
+    \includegraphics[height=9cm]{Verification/new_post_no_upload_incomplete.jpg}
+    \caption{Shows the camera permissions request at first sign in and image capture method with no gallery access option.}
+    \label{fig:camera_access}
+\end{figure}
+
+% ---------------- TABLE sprint 3 ----------------
+\subsection{Sprint 3 - Automatic Upload to Supabase on Successful Post}
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.35\linewidth} p{0.45\linewidth} p{0.15\linewidth}}
+\toprule
+\textbf{ Verification Process} & \textbf{Verification Objective} & \textbf{Figure} \\
+\midrule
+\textbf{(9)} Make a post, and upon success we are redirected to the home screen where newly created post is shown, then sign in to another account and view the new post on feed. &
+Verify that upload starts automatically after successful post. &
+Fig.\ref{fig:upload_post_success}\\
+
+\textbf{(10)} Visit Supabase management portal and find new \texttt{post\_images} row in table. Schema dictates that \texttt{post\_images} cannot exist without a corresponding row in \texttt{posts}. &
+Verify that uploads include a server-side timestamp. &
+Fig.\ref{fig:upload_timestamp}, Fig.\ref{fig:db} \\
+
+\textbf{(11)} We force shutdown the Supabase server to view post failure scenario.&
+Verify that users can see whether the upload succeeds or fails. &
+Fig.\ref{fig:upload_post_success} \\
+
+\bottomrule
+\end{tabular}
+\caption{Upload posts success, failure, and server-side propagation verification}
+\label{tab:post_upload}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/new_post_redirect_homepage.jpg}%
+    \includegraphics[height=9cm]{Verification/new_post_failure.jpg}
+    \caption{Upload Post, verification of success and failure}
+    \label{fig:upload_post_success}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Verification/upload_timestamp.png}
+    \caption{shows that each successful upload posses server side timestamp.}
+    \label{fig:upload_timestamp}
+\end{figure}
+
+% ---------------- TABLE sprint 4 ----------------
+\subsection{Sprint 4 - GPS Location Capture}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.35\linewidth} p{0.45\linewidth} p{0.15\linewidth}}
+\toprule
+\textbf{ Verification Process} & \textbf{Verification Objective} & \textbf{Figure} \\
+\midrule
+
+\textbf{(12)} check \texttt{posts} for \texttt{latitude} and \texttt{longitude} columns. Ensure that successful posts all have non-null values. &
+Verify that valid latitude and longitude values are stored. &
+Fig.~\ref{fig:lat_and_long} \\
+
+\textbf{(13)} Ensure that the only alternative to providing location is to cancel the post&
+Verify that submissions without GPS data are blocked. &
+Fig.~\ref{fig:request_location} \\
+
+\textbf{(14)} Attempt to make a post in a residential area with no buildings. Ensure that address appears in the new post on the home feed and in the search tab. &
+Verify that current location is requested if no nearby buildings are found. &
+Fig.\ref{fig:request_location} \\
+
+\bottomrule
+\end{tabular}
+\caption{GPS location, and current location verification}
+\label{tab:location_capture}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/new_post_current_location.jpg}
+    \includegraphics[height=9cm]{Verification/new_post creating.jpg}
+    \includegraphics[height=9cm]{Verification/create_post_using_real_addr.jpg}
+    \caption{GPS fallback and current-location flow for issue posting}
+    \label{fig:request_location}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Verification/lat_and_long.png}
+    \caption{shows each post has non-null latitude and longitude values}
+    \label{fig:lat_and_long}
+\end{figure}
+
+% ---------------- TABLE sprint 5 ----------------
+
+\subsection{Sprint 5 – Issue Creation and Building History}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.35\linewidth} p{0.45\linewidth} p{0.15\linewidth}}
+\toprule
+\textbf{ Verification Process} & \textbf{Verification Objective} & \textbf{Figure} \\
+\midrule
+
+\textbf{(15)} Create a new post with a photo, building address, and other information available in the post creation page and ensure that the new post propagates to the Supabase portal and that accounts other the original poster can see the upload.&
+Verify that issue records store photo, building, timestamp, and user ID. &
+Fig.\ref{fig:upload_timestamp}, Fig.\ref{fig:db}, Fig.\ref{fig:lat_and_long}, Fig.\ref{fig:upload_post_success}\\
+
+\textbf{(16)} We make multiple posts from different accounts and ensure that they are subsequent to one another based on time of posting. &
+Verify that issues are ordered by date. &
+Fig.\ref{fig:post_ordering} \\
+
+\textbf{(17)} We create a post and then use the options to change it from unresolved to resolved in the home feed. We then view the home feed and ensure the post remains.&
+Verify that resolved issues remain visible. &
+Fig.\ref{fig:change_status} \\
+
+\bottomrule
+\end{tabular}
+\caption{Issue creation and building history verification}
+\label{tab:issue_creation}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/chang_post_status.jpg}
+    \includegraphics[height=9cm]{Verification/change_post_status_success.jpg}
+    \includegraphics[height=9cm]{Verification/upvote.jpg}
+    \caption{Shows post status change workflow and successful propagation without removal from feed}
+    \label{fig:change_status}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/comment_change_propagation.jpg}
+    \caption{Shows post ordering based on time}
+    \label{fig:post_ordering}
+\end{figure}
+
+% ---------------- TABLE sprint 6 ----------------
+\subsection{Sprint 6 – Building Identification with Google Places}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.35\linewidth} p{0.45\linewidth} p{0.15\linewidth}}
+\toprule
+\textbf{ Verification Process} & \textbf{Verification Objective} & \textbf{Figure} \\
+\midrule
+
+\textbf{(18)} We first take a picture while in the vicinity of public buildings, then we verify taht the buildings and their locations are retrieved. Some locations that do not have fixed addresses will not have specific locations but their longitude and latitude of where the picture was taken will be preserved. &
+Verify that nearby buildings are retrieved using GPS coordinates. &
+Fig.~\ref{fig:building_list} \\
+
+\textbf{(19)} We select a building from the list which is marked by a green halo. We cannot create a post until all of the post information is filled. the button will remain gray until then. Some buildings with sub-addresses will be shown as number identifiers or parking spaces will be shown as parking. &
+Verify that submissions without GPS data are blocked and that results include necessary information. &
+Fig.~\ref{fig:building_list} \\
+
+\textbf{(20)} We fill the remaining information and make a post. The post appears in the home feed and contains the necessary information, such as building location on the post.  &
+Verify that the selected building is stored with the issue. &
+Fig.\ref{fig:building_list} \\
+
+\bottomrule
+\end{tabular}
+\caption{Camera access testing process and constraint verification}
+% \label{tab:auth_requirements}
+\end{table}
+
+% ---------------- FIGURES ----------------
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/building_list.jpg}
+    \includegraphics[height=9cm]{Verification/selected_building.jpg}
+    \includegraphics[height=9cm]{Verification/completed_post.jpg}
+    \caption{location identification for public buildings.}
+    \label{fig:building_list}
+\end{figure}
+
+% ---------------- TABLE sprint 7 ----------------
+\subsection{Sprint 7 – Public Building Profile and Search }
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.35\linewidth} p{0.45\linewidth} p{0.15\linewidth}}
+\toprule
+\textbf{ Verification Process} & \textbf{Verification Objective} & \textbf{Figure} \\
+\midrule
+
+\textbf{(21)}  We view a public building profile and see the resolved and unresolved issues that are currently posted to that building profile. &
+Verify that public building pages are accessible. &
+Fig.~\ref{fig:search} \\
+
+\textbf{(22)} We search the buildings by name or by address and see live search suggestions in the search tab &
+Verify that buildings can be searched by name or address. &
+Fig.~\ref{fig:search} \\
+
+\textbf{(23)} We search the building by tags and see live search suggestions in the search tab  &
+Verify that issues can be filtered by tag or location.&
+Fig.\ref{fig:search} \\
+
+\bottomrule
+\end{tabular}
+\caption{Search and building profile view verification}
+\label{tab:Public building search}
+\end{table}
+
+% ---------------- FIGURES ----------------
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/search_building_name.jpg}
+    \includegraphics[height=9cm]{Verification/search_tag.jpg}
+    \includegraphics[height=9cm]{Verification/building_profile_page.jpg}
+    \caption{Shows that multiple search formats are available and that public building pages are accessible with accurate record maintenance}
+    \label{fig:search}
+\end{figure}
+
+% ---------------- TABLE sprint 8 ----------------
+\subsection{Sprint 8 -- Comments, Upvotes, and Social Features }
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.35\linewidth} p{0.45\linewidth} p{0.15\linewidth}}
+\toprule
+\textbf{ Verification Process} & \textbf{Verification Objective} & \textbf{Figure} \\
+\midrule
+
+\textbf{(24)} We upvote an existing post from a different user account, then we sign into the original poster's account and view both the post and the notification center. &
+Verify that upvotes propagate to all remote users and provide notifications. &
+Fig.\ref{fig:change_status}, Fig.\ref{fig:personal_profile}\\
+
+\textbf{(25)} We comment an existing post from a different user account, then we sign into the original poster's account and view both the post and the notification center. &
+Verify that comments propagate to all remote users and provide notifications. &
+Fig.~\ref{fig:comments} \\
+
+\textbf{(26)} We delete a comment from an account that is not the original poster, then we view the feed to see if the number of comments has changed, and we enter the comment section to see if the change was applied. &
+Verify that comments and upvotes can be deleted/removed. &
+Fig.\ref{fig:comments} \\
+
+\textbf{(27)} We go to the user profile tab and select the option to set the profile picture. we then take a photo (or select one) and then go to the user profile tab to see if the change saved. We then sign into another account and go to the comments section where that user has made a comment and see if the change propagated across users and feeds. &
+Verify that users have a customizable social profile that keeps track of their engagement.&
+Fig.\ref{fig:personal_profile} \\
+\bottomrule
+\end{tabular}
+\caption{Comments, upvotes, and social profile verification}
+% \label{tab:auth_requirements}
+\end{table}
+
+% ---------------- FIGURES ----------------
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/comment_new_post_other_account.jpg}
+    \includegraphics[height=9cm]{Verification/comment_multiple_users_profile_success.jpg}
+    \includegraphics[height=9cm]{Verification/delete_comment.jpg}
+    \includegraphics[height=9cm]{Verification/comment_change_propagation.jpg}
+    \caption{Comment propagation across accounts, deleting comments, adding comments}
+    \label{fig:comments}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=9cm]{Verification/profile_tab.jpg}
+    \includegraphics[height=9cm]{Verification/profile_tab_take-choose_picture.jpg}
+    \includegraphics[height=9cm]{Verification/profile_page_picture_change_success.jpg}
+    \includegraphics[height=9cm]{Verification/notification_center.jpg}
+    \caption{Personal profile actions verification and notification center tab propagation}
+    \label{fig:personal_profile}
+\end{figure}
+
+% ---------------- TABLE sprint 9 ----------------
+\subsection{Sprint 9 – Abuse Prevention & Validation}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.35\linewidth} p{0.45\linewidth} p{0.15\linewidth}}
+\toprule
+\textbf{ Verification Process} & \textbf{Verification Objective} & \textbf{Figure} \\
+\midrule
+
+\textbf{(28)} We set the rules \texttt{policy} feature inside of Supabase to limit the number of posts for each user. We give each token a credit allowance, and when a post is made they receive one credit with a 24 hours \texttt{time\_to\_live}. Only after the credits die will the user be able to make another post. &
+Verify that daily submission limits are enforced. &
+Fig.\ref{fig:db}, Fig.\ref{fig:post_limit} \\
+
+\textbf{(29)} We attempt to make 20 posts from a user and the user receives a busy server notice telling them to try again later before the post is applied.  &
+Verify that users receive an error when limits are exceeded. &
+Fig.~\ref{fig:change_status} \\
+
+\textbf{(30)} We establish a strict schema with server-side dedupe key on post creation, and create a \texttt{creatingPost} guard that blocks the create post button from being pressed so the create post cannot be used twice in a single session. Because we permit the ability to post different angles of the same issue, we do not take the verification further than this. &
+Verify that duplicate submissions are blocked and verify that duplicate images are detected. &
+Fig.\ref{fig:db} \\
+
+\bottomrule
+\end{tabular}
+\caption{Abuse prevention and submission validation verification}
+% \label{tab:auth_requirements}
+\end{table}
+
+% ---------------- FIGURES ----------------
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=4cm]{Verification/post_limits.png}
+    % \includegraphics[height=9cm]{Verification/new_post creating.jpg}
+    % \includegraphics[height=9cm]{Verification/create_post_using_real_addr.jpg}
+    \caption{Post rate limit policy header (code is extensive) used by Supabase}
+    \label{fig:post_limit}
+\end{figure}
+
+
+\newpage
+\section{References}
+
+Sommerville, I. (2021). \textit{Software engineering} (10th ed.). Pearson.
+Institute of Electrical and Electronics Engineers. (2024). IEEE standard for system, software, and hardware verification and validation (IEEE Std 1012-2024). IEEE.
+\end {document}
