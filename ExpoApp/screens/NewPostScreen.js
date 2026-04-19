@@ -85,6 +85,7 @@ export default function NewPostScreen() {
   const [nearbyError, setNearbyError] = useState(null)
   const [linkedBuilding, setLinkedBuilding] = useState(null)
   const [usedResidentialFallback, setUsedResidentialFallback] = useState(false)
+  const [nearbyRefreshKey, setNearbyRefreshKey] = useState(0)
   const [resolutionStatus, setResolutionStatus] = useState(null)
   const [creatingPost, setCreatingPost] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
@@ -103,6 +104,7 @@ export default function NewPostScreen() {
     setSelected(new Set(['structural']))
     setSeverity(5)
     setUsedResidentialFallback(false)
+    setNearbyRefreshKey(0)
     setCreatingPost(false)
   }
 
@@ -166,7 +168,9 @@ export default function NewPostScreen() {
         setNearbyLoading(false)
       })
     return () => ac.abort()
-  }, [gpsCoords, capturedPhoto])
+  }, [gpsCoords, capturedPhoto, nearbyRefreshKey])
+
+  const retryNearbyLookup = () => setNearbyRefreshKey((value) => value + 1)
 
   const toggle = (id) => {
     setSelected((prev) => {
@@ -389,7 +393,16 @@ export default function NewPostScreen() {
                 <Text style={styles.nearbyHint}>Loading places from OpenStreetMap…</Text>
               </View>
             ) : null}
-            {nearbyError ? <Text style={styles.nearbyError}>{nearbyError}</Text> : null}
+            {nearbyError ? (
+              <View style={styles.nearbyErrorWrap}>
+                <Text style={styles.nearbyError}>{nearbyError}</Text>
+                <View style={styles.nearbyActions}>
+                  <TouchableOpacity style={styles.nearbyActionBtn} onPress={retryNearbyLookup} activeOpacity={0.8}>
+                    <Text style={styles.nearbyActionText}>Retry lookup</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
             {!nearbyLoading && !nearbyError && nearbyOptions.length === 0 ? (
               <Text style={styles.nearbyEmpty}>
                 No public buildings found within ~200 m. Confirm residential housing in the prompt to use your current
@@ -490,7 +503,18 @@ const styles = StyleSheet.create({
   buildingSection: { marginBottom: 16 },
   nearbyLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   nearbyHint: { fontSize: 13, color: '#888', flex: 1 },
-  nearbyError: { fontSize: 13, color: '#ff6b6b', marginBottom: 12 },
+  nearbyErrorWrap: { marginBottom: 12 },
+  nearbyError: { fontSize: 13, color: '#ff6b6b', marginBottom: 10, lineHeight: 19 },
+  nearbyActions: { flexDirection: 'row', gap: 8 },
+  nearbyActionBtn: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,255,127,0.35)',
+    backgroundColor: 'rgba(0,255,127,0.1)',
+  },
+  nearbyActionText: { color: '#00ff7f', fontSize: 12, fontWeight: '600' },
   nearbyEmpty: { fontSize: 13, color: '#888', marginBottom: 12, lineHeight: 20 },
   buildingRow: {
     borderRadius: 12,

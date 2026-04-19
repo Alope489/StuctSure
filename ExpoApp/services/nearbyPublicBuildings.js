@@ -97,6 +97,12 @@ function isOverpassOverloadRemark(remark) {
   return s.includes('timeout') || s.includes('too many') || s.includes('busy') || s.includes('rate_limited')
 }
 
+function createOverpassError(code, message) {
+  const err = new Error(message)
+  err.code = code
+  return err
+}
+
 /**
  * @param {string} query
  * @param {AbortSignal} [signal]
@@ -104,6 +110,9 @@ function isOverpassOverloadRemark(remark) {
  */
 async function fetchOverpassWithFallback(query, signal) {
   let lastMessage = 'Overpass unavailable'
+  let sawGatewayTimeout = false
+  let sawServerBusy = false
+  let sawNetworkIssue = false
   for (let u = 0; u < OVERPASS_ENDPOINTS.length; u++) {
     const url = OVERPASS_ENDPOINTS[u]
     try {
@@ -115,6 +124,8 @@ async function fetchOverpassWithFallback(query, signal) {
       })
       if (!res.ok) {
         if (RETRYABLE_HTTP.has(res.status)) {
+          if (res.status === 504) sawGatewayTimeout = true
+          else sawServerBusy = true
           lastMessage = `Overpass HTTP ${res.status} (server busy)`
           continue
         }
@@ -127,18 +138,36 @@ async function fetchOverpassWithFallback(query, signal) {
       }
       const els = json.elements || []
       if (els.length === 0 && json.remark && isOverpassOverloadRemark(json.remark)) {
+        sawServerBusy = true
         lastMessage = 'Overpass timed out or was busy'
         continue
       }
       return json
     } catch (err) {
       if (err && err.name === 'AbortError') throw err
+      sawNetworkIssue = true
       lastMessage = err && err.message ? err.message : 'Network error'
       continue
     }
   }
-  throw new Error(
-    `${lastMessage}. Public OSM servers are often overloaded — try again in a minute or move slightly and retake the photo.`
+  if (sawGatewayTimeout)
+    throw createOverpassError(
+      'OVERPASS_GATEWAY_TIMEOUT',
+      `OpenStreetMap lookup failed with HTTP 504 (Gateway Timeout): the public Overpass server did not respond in time. Workaround: tap Retry, or use current location if this is residential housing.`
+    )
+  if (sawServerBusy)
+    throw createOverpassError(
+      'OVERPASS_BUSY',
+      `OpenStreetMap lookup failed because public Overpass servers are busy or rate-limited. Workaround: tap Retry, wait 30-60 seconds, or use current location if this is residential housing.`
+    )
+  if (sawNetworkIssue)
+    throw createOverpassError(
+      'OVERPASS_NETWORK',
+      `OpenStreetMap lookup failed due to a network error while contacting Overpass mirrors. Workaround: check connection, then retry.`
+    )
+  throw createOverpassError(
+    'OVERPASS_UNAVAILABLE',
+    `${lastMessage}. OpenStreetMap lookup is temporarily unavailable. Workaround: tap Retry, or use current location if needed.`
   )
 }
 
