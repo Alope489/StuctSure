@@ -1,16 +1,63 @@
-import { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, TextInput } from 'react-native'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  TextInput,
+  Platform,
+  ActivityIndicator,
+} from 'react-native'
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 
 import { useApp } from '../context/AppContext'
 import { getImageSource, getResolutionStatus, getPostCategoryTags } from '../data/posts'
+import {
+  isGooglePlacesConfigured,
+  searchBuildingsLocal,
+  fetchPlacePredictions,
+  fetchPlaceDetailsLatLng,
+  regionForBuildings,
+} from '../services/geoMapController'
 
-function BuildingProfileCircle({ uri, size }) {
+let MapViewComp = null
+let MarkerComp = null
+let ProviderGoogle = undefined
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps')
+  MapViewComp = Maps.default
+  MarkerComp = Maps.Marker
+  ProviderGoogle = Maps.PROVIDER_GOOGLE
+}
+
+/** Thumbnail for the small circle next to a building name: explicit image URL, else first report photo. */
+function getBuildingAvatarSource(building, postsForLookup) {
+  if (!building) return null
+  if (building.image && String(building.image).trim()) {
+    return { uri: String(building.image).trim() }
+  }
+  const list = Array.isArray(postsForLookup) ? postsForLookup : []
+  for (const p of list) {
+    if (p?.buildingId !== building.id) continue
+    const src = p?.images?.[0] ? getImageSource(p.images[0]) : null
+    if (src) return src
+  }
+  return null
+}
+
+function BuildingProfileCircle({ source, uri, size }) {
   const [loadFailed, setLoadFailed] = useState(false)
+  useEffect(() => {
+    setLoadFailed(false)
+  }, [source, uri])
   const dim = { width: size, height: size, borderRadius: size / 2 }
-  const showIcon = !uri?.trim() || loadFailed
+  const resolved = source ?? (uri?.trim() ? { uri: uri.trim() } : null)
+  const showIcon = resolved == null || loadFailed
   if (showIcon) {
     return (
       <View style={[dim, styles.buildingProfileFallback]}>
@@ -20,7 +67,7 @@ function BuildingProfileCircle({ uri, size }) {
   }
   return (
     <Image
-      source={{ uri }}
+      source={resolved}
       style={[dim, styles.buildingProfilePhoto]}
       onError={() => setLoadFailed(true)}
     />
@@ -29,20 +76,89 @@ function BuildingProfileCircle({ uri, size }) {
 
 function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, buildings, posts }) {
   const insets = useSafeAreaInsets()
-  const q = searchQuery.trim().toLowerCase()
-  const filtered = buildings
-    .map((b) => ({
-      building: b,
-      tagMatches: posts
-        .filter((p) => p.buildingId === b.id)
-        .flatMap((p) => getPostCategoryTags(p))
-        .filter((tag, idx, all) => all.indexOf(tag) === idx)
-        .filter((tag) => tag.toLowerCase().includes(q)),
-    }))
-    .filter(
-      ({ building, tagMatches }) =>
-        building.name.toLowerCase().includes(q) || building.address.toLowerCase().includes(q) || tagMatches.length > 0
-    )
+  const mapRef = useRef(null)
+  const [placesPredictions, setPlacesPredictions] = useState([])
+  const [placesLoading, setPlacesLoading] = useState(false)
+  const [explorePin, setExplorePin] = useState(null)
+
+  const qTrim = searchQuery.trim()
+  const hasQuery = qTrim.length > 0
+
+  const localMatches = useMemo(
+    () => searchBuildingsLocal(buildings, posts, searchQuery, getPostCategoryTags),
+    [buildings, posts, searchQuery]
+  )
+
+  const initialRegion = useMemo(() => regionForBuildings(buildings), [buildings])
+
+  const reportCountByBuildingId = useMemo(() => {
+    const m = new Map()
+    for (const p of posts) {
+      if (!p?.buildingId) continue
+      m.set(p.buildingId, (m.get(p.buildingId) || 0) + 1)
+    }
+    return m
+  }, [posts])
+
+  useEffect(() => {
+    if (!isGooglePlacesConfigured() || qTrim.length < 2) {
+      setPlacesPredictions([])
+      return undefined
+    }
+    let cancelled = false
+    const t = setTimeout(async () => {
+      setPlacesLoading(true)
+      try {
+        const preds = await fetchPlacePredictions(qTrim)
+        if (!cancelled) setPlacesPredictions(preds)
+      } finally {
+        if (!cancelled) setPlacesLoading(false)
+      }
+    }, 280)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [qTrim])
+
+  const buildingsWithCoords = useMemo(
+    () =>
+      buildings.filter(
+        (b) => typeof b.latitude === 'number' && typeof b.longitude === 'number' && !Number.isNaN(b.latitude)
+      ),
+    [buildings]
+  )
+
+  const handlePlaceRowPress = async (place) => {
+    const geo = await fetchPlaceDetailsLatLng(place.placeId)
+    if (!geo) return
+    onSearchChange('')
+    setPlacesPredictions([])
+    const region = {
+      latitude: geo.lat,
+      longitude: geo.lng,
+      latitudeDelta: 0.025,
+      longitudeDelta: 0.025,
+    }
+    mapRef.current?.animateToRegion(region, 450)
+    setExplorePin({
+      lat: geo.lat,
+      lng: geo.lng,
+      title: geo.name || place.primaryText,
+      subtitle: geo.formattedAddress || place.description,
+    })
+  }
+
+  const handleMarkerBuildingPress = (building) => {
+    onBuildingSelect(building)
+    setExplorePin(null)
+  }
+
+  const mapTopOffset = 14 + insets.top + 56
+
+  /** Android: Google Maps when key is set. iOS: Apple MapKit (no extra native Google Maps pod). */
+  const mapProvider =
+    MapViewComp && Platform.OS === 'android' && isGooglePlacesConfigured() ? ProviderGoogle : undefined
 
   return (
     <View style={styles.mapContainer}>
@@ -50,28 +166,86 @@ function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, building
         <Ionicons name="search" size={20} color="#888" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search buildings or tags"
+          placeholder={
+            isGooglePlacesConfigured()
+              ? 'Search buildings, addresses, or places'
+              : 'Search buildings by name or address'
+          }
           placeholderTextColor="#666"
           value={searchQuery}
           onChangeText={onSearchChange}
           autoCapitalize="none"
           autoCorrect={false}
         />
+        {placesLoading ? <ActivityIndicator size="small" color="#00ff7f" /> : null}
       </View>
 
-      <View style={styles.mapSurface} />
+      <View style={styles.mapSurface}>
+        {MapViewComp ? (
+          <MapViewComp
+            ref={mapRef}
+            style={StyleSheet.absoluteFillObject}
+            initialRegion={initialRegion}
+            provider={mapProvider}
+            showsUserLocation={false}
+            showsMyLocationButton={false}
+            mapType="standard"
+          >
+            {buildingsWithCoords.map((b) => {
+              const n = reportCountByBuildingId.get(b.id) || 0
+              return (
+                <MarkerComp
+                  key={b.id}
+                  coordinate={{ latitude: b.latitude, longitude: b.longitude }}
+                  title={b.name}
+                  description={n ? `${n} infrastructure report${n === 1 ? '' : 's'}` : 'No reports yet'}
+                  onPress={() => handleMarkerBuildingPress(b)}
+                />
+              )
+            })}
+            {explorePin ? (
+              <MarkerComp
+                coordinate={{ latitude: explorePin.lat, longitude: explorePin.lng }}
+                pinColor="#f59e0b"
+                title={explorePin.title}
+                description={explorePin.subtitle}
+              />
+            ) : null}
+          </MapViewComp>
+        ) : (
+          <View style={[styles.mapFallback, StyleSheet.absoluteFillObject]}>
+            <Ionicons name="map-outline" size={48} color="#444" />
+            <Text style={styles.mapFallbackText}>Map is not available on web.</Text>
+            <Text style={styles.mapFallbackSub}>Use iOS or Android for the geographic view.</Text>
+          </View>
+        )}
+      </View>
 
-      {searchQuery.length > 0 && (
-        <View style={styles.searchResultsOverlay}>
+      {explorePin ? (
+        <TouchableOpacity
+          style={[styles.clearPinBtn, { bottom: 18 + insets.bottom }]}
+          onPress={() => setExplorePin(null)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="close-circle" size={18} color="#0d0d0d" />
+          <Text style={styles.clearPinText}>Clear place pin</Text>
+        </TouchableOpacity>
+      ) : null}
+
+      {hasQuery ? (
+        <View style={[styles.searchResultsOverlay, { top: mapTopOffset }]}>
           <ScrollView style={styles.searchResultsScroll} keyboardShouldPersistTaps="handled">
-            {filtered.map(({ building, tagMatches }) => (
+            {localMatches.map(({ building, tagMatches }) => (
               <TouchableOpacity
                 key={building.id}
                 style={styles.searchResultItem}
-                onPress={() => onBuildingSelect(building)}
+                onPress={() => {
+                  onBuildingSelect(building)
+                  setExplorePin(null)
+                }}
                 activeOpacity={0.7}
               >
-                <BuildingProfileCircle uri={building.image} size={48} />
+                <BuildingProfileCircle source={getBuildingAvatarSource(building, posts)} size={48} />
                 <View style={styles.searchResultText}>
                   <Text style={styles.searchResultName}>{building.name}</Text>
                   <Text style={styles.searchResultAddress}>{building.address}</Text>
@@ -82,15 +256,55 @@ function MapSearchView({ searchQuery, onSearchChange, onBuildingSelect, building
                         : `Tag matches: ${tagMatches.slice(0, 2).join(', ')}`}
                     </Text>
                   ) : null}
+                  <Text style={styles.searchResultBadge}>In-app building</Text>
                 </View>
               </TouchableOpacity>
             ))}
-            {filtered.length === 0 && (
-              <Text style={styles.searchResultEmpty}>No buildings found</Text>
-            )}
+
+            {isGooglePlacesConfigured() && qTrim.length >= 2 ? (
+              <>
+                {localMatches.length > 0 ? <Text style={styles.sectionLabel}>Google Places</Text> : null}
+                {placesPredictions.map((p) => (
+                  <TouchableOpacity
+                    key={p.placeId}
+                    style={styles.searchResultItem}
+                    onPress={() => handlePlaceRowPress(p)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.placeIconWrap}>
+                      <Ionicons name="navigate-outline" size={22} color="#60a5fa" />
+                    </View>
+                    <View style={styles.searchResultText}>
+                      <Text style={styles.searchResultName}>{p.primaryText}</Text>
+                      <Text style={styles.searchResultAddress}>{p.secondaryText || p.description}</Text>
+                      <Text style={styles.searchResultPlaces}>Places API</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </>
+            ) : null}
+
+            {!placesLoading &&
+            localMatches.length === 0 &&
+            placesPredictions.length === 0 &&
+            (!isGooglePlacesConfigured() || qTrim.length < 2) ? (
+              <Text style={styles.searchResultEmpty}>
+                {isGooglePlacesConfigured() && qTrim.length < 2
+                  ? 'Type at least 2 characters for address / place suggestions.'
+                  : 'No buildings found in your data.'}
+              </Text>
+            ) : null}
+
+            {!placesLoading &&
+            isGooglePlacesConfigured() &&
+            qTrim.length >= 2 &&
+            localMatches.length === 0 &&
+            placesPredictions.length === 0 ? (
+              <Text style={styles.searchResultEmpty}>No Places matches — try another query.</Text>
+            ) : null}
           </ScrollView>
         </View>
-      )}
+      ) : null}
     </View>
   )
 }
@@ -106,6 +320,8 @@ function BuildingDetailView({ building, forBuilding, postTab, setPostTab, tabPos
   const allImages = tabPosts.flatMap((p) => (p?.images?.[0] ? [{ post: p, img: p.images[0] }] : []))
   const tagAggregate = forBuilding.reduce((sum, p) => sum + getPostCategoryTags(p).length, 0)
 
+  const circleSource = useMemo(() => getBuildingAvatarSource(building, forBuilding), [building, forBuilding])
+
   return (
     <ScrollView style={styles.detailScroll} contentContainerStyle={styles.detailScrollContent}>
       <View style={[styles.detailHeader, { paddingTop: 14 + insets.top }]}>
@@ -116,7 +332,7 @@ function BuildingDetailView({ building, forBuilding, postTab, setPostTab, tabPos
       </View>
 
       <View style={styles.buildingHeader}>
-        <BuildingProfileCircle uri={building?.image} size={100} />
+        <BuildingProfileCircle source={circleSource} size={100} />
         <View style={styles.buildingBadges}>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{tagAggregate} Tags</Text>
@@ -257,8 +473,8 @@ export default function SearchMainScreen() {
             : rt?.kind === 'profilePosts' && rt.profileUsername
               ? rt
               : rt?.kind === 'homeFeed'
-              ? rt
-              : null
+                ? rt
+                : null
         )
       }
       navigation.setParams({ openBuildingId: undefined, returnTarget: undefined })
@@ -333,19 +549,57 @@ const styles = StyleSheet.create({
     backgroundColor: '#15181c',
     position: 'relative',
   },
+  mapFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#15181c',
+    padding: 24,
+  },
+  mapFallbackText: { color: '#888', fontSize: 15, marginTop: 12, textAlign: 'center' },
+  mapFallbackSub: { color: '#555', fontSize: 13, marginTop: 6, textAlign: 'center' },
+  clearPinBtn: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: '#00ff7f',
+  },
+  clearPinText: { color: '#0d0d0d', fontWeight: '700', fontSize: 14 },
   searchResultsOverlay: {
     position: 'absolute',
     left: 14,
     right: 14,
-    top: 100,
+    zIndex: 20,
+    elevation: 20,
     backgroundColor: 'rgba(13,13,13,0.98)',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
-    maxHeight: 280,
+    maxHeight: 320,
   },
   searchResultsScroll: { padding: 12 },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#666',
+    letterSpacing: 0.6,
+    marginTop: 8,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
   searchResultItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+  placeIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(96,165,250,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buildingProfileFallback: {
     backgroundColor: 'rgba(0,255,127,0.14)',
     alignItems: 'center',
@@ -357,6 +611,8 @@ const styles = StyleSheet.create({
   searchResultName: { fontSize: 15, fontWeight: '600', color: '#e0e0e0', marginBottom: 2 },
   searchResultAddress: { fontSize: 12, color: '#888' },
   searchResultTags: { fontSize: 12, color: '#00ff7f', marginTop: 4 },
+  searchResultBadge: { fontSize: 11, color: '#888', marginTop: 4, fontWeight: '600' },
+  searchResultPlaces: { fontSize: 11, color: '#60a5fa', marginTop: 4, fontWeight: '600' },
   searchResultEmpty: { padding: 20, color: '#666', textAlign: 'center' },
 
   detailScroll: { flex: 1, backgroundColor: '#0d0d0d' },

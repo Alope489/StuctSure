@@ -34,6 +34,8 @@ const withKnownBuildings = (posts, buildings) =>
               id: post.buildingId,
               name: post.buildingName || 'Building',
               address: post.buildingAddress || '',
+              latitude: post.latitude ?? null,
+              longitude: post.longitude ?? null,
               image: PLACEHOLDER_BUILDING_IMAGE,
               tags: 0,
               history: 0,
@@ -201,7 +203,7 @@ export function AppProvider({ children }) {
   const loadCommentsForPost = useCallback(
     async (postId) => {
       const post = posts.find((item) => item.id === postId)
-      if (!post) return commentsByPost[postId] || []
+      if (!post) return []
       setCommentLoadingPostId(postId)
       clearError('comments')
       try {
@@ -212,10 +214,10 @@ export function AppProvider({ children }) {
       } catch (error) {
         setCommentLoadingPostId(null)
         setError('comments', error, 'Could not load comments.')
-        return commentsByPost[postId] || []
+        return []
       }
     },
-    [posts, commentsByPost, sessionToken, clearError, setError]
+    [posts, sessionToken, clearError, setError]
   )
 
   const addPost = useCallback(

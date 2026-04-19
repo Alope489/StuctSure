@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native'
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -70,9 +71,10 @@ export default function FilteredPostsScreen({ mode }) {
       refreshPosts()
     }, [refreshPosts])
   )
+  // Depend only on post id — loadCommentsForPost is stable (AppContext avoids commentsByPost in its deps).
   useEffect(() => {
-    if (commentsOpenForPostId) loadCommentsForPost(commentsOpenForPostId)
-  }, [commentsOpenForPostId, loadCommentsForPost])
+    if (commentsOpenForPostId) void loadCommentsForPost(commentsOpenForPostId)
+  }, [commentsOpenForPostId])
   useEffect(() => {
     if (!hasAuthConfigured || sessionToken || !authReady) return
     const parent = navigation.getParent?.()
@@ -228,7 +230,7 @@ export default function FilteredPostsScreen({ mode }) {
       <Modal visible={!!commentsOpenForPostId} transparent animationType="slide">
         <View style={styles.commentModalOverlay}>
           <TouchableOpacity style={styles.commentModalBackdrop} activeOpacity={1} onPress={closeComments} />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%', flex: 1 }}>
             <View style={[styles.commentModalPanel, { paddingBottom: insets.bottom + 12 }]}>
               <View style={styles.commentModalHandle} />
               <View style={styles.commentModalHeader}>
@@ -245,10 +247,22 @@ export default function FilteredPostsScreen({ mode }) {
                       {(posts.find((post) => post.id === commentsOpenForPostId) || {}).title}
                     </Text>
                   </View>
-                  <ScrollView style={styles.commentList} contentContainerStyle={styles.commentListContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                    {commentLoadingPostId === commentsOpenForPostId ? <Text style={styles.commentMeta}>Loading comments…</Text> : null}
-                    {operationErrors.comments ? <Text style={styles.commentError}>{operationErrors.comments}</Text> : null}
-                    {(commentsByPost[commentsOpenForPostId] || []).map((comment) => (
+                  <View style={styles.commentListWrap}>
+                    <ScrollView
+                      style={styles.commentList}
+                      contentContainerStyle={[styles.commentListContent, { flexGrow: 1 }]}
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={false}
+                      nestedScrollEnabled
+                    >
+                      {commentLoadingPostId === commentsOpenForPostId ? (
+                        <View style={styles.commentLoadingRow}>
+                          <ActivityIndicator color="#00ff7f" />
+                          <Text style={styles.commentMeta}>Loading comments…</Text>
+                        </View>
+                      ) : null}
+                      {operationErrors.comments ? <Text style={styles.commentError}>{operationErrors.comments}</Text> : null}
+                      {(commentsByPost[commentsOpenForPostId] || []).map((comment) => (
                       <View key={comment.id} style={styles.commentItem}>
                         <View style={styles.commentTopRow}>
                           <View style={styles.commentAvatar}>
@@ -275,7 +289,8 @@ export default function FilteredPostsScreen({ mode }) {
                         </View>
                       </View>
                     ))}
-                  </ScrollView>
+                    </ScrollView>
+                  </View>
                   <View style={styles.commentInputRow}>
                     <TextInput
                       style={styles.commentInput}
@@ -314,16 +329,25 @@ const styles = StyleSheet.create({
   postFeedContentEmpty: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 24 },
   commentModalOverlay: { flex: 1, justifyContent: 'flex-end' },
   commentModalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
-  commentModalPanel: { backgroundColor: '#0d0d0d', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '100%', paddingHorizontal: 16 },
+  commentModalPanel: {
+    flex: 1,
+    backgroundColor: '#0d0d0d',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '100%',
+    paddingHorizontal: 16,
+  },
   commentModalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', alignSelf: 'center', marginTop: 12, marginBottom: 8 },
   commentModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   commentModalTitle: { fontSize: 18, fontWeight: '600', color: '#e0e0e0' },
   commentModalPostPreview: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   commentModalPostAuthor: { fontSize: 14, fontWeight: '600', color: '#00ff7f', marginBottom: 4 },
   commentModalPostTitle: { fontSize: 13, color: 'rgba(224,224,224,0.8)' },
+  commentListWrap: { flex: 1, minHeight: 0 },
   commentList: { flex: 1 },
   commentListContent: { paddingVertical: 12, paddingBottom: 20 },
-  commentMeta: { color: '#888', marginBottom: 8 },
+  commentLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  commentMeta: { color: '#888', fontSize: 14 },
   commentError: { color: '#ff7d7d', marginBottom: 8 },
   commentItem: { marginBottom: 16 },
   commentTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },

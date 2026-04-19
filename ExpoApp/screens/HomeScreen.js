@@ -204,7 +204,7 @@ export default function HomeScreen({ navigation }) {
       <Modal visible={!!commentsOpenForPostId} transparent animationType="slide">
         <View style={styles.commentModalOverlay}>
           <TouchableOpacity style={styles.commentModalBackdrop} activeOpacity={1} onPress={closeComments} />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%', flex: 1 }}>
             <View style={[styles.commentModalPanel, { paddingBottom: insets.bottom + 12 }]}>
               <View style={styles.commentModalHandle} />
               <View style={styles.commentModalHeader}>
@@ -223,15 +223,22 @@ export default function HomeScreen({ navigation }) {
                       {(posts.find((p) => p.id === commentsOpenForPostId) || {}).title}
                     </Text>
                   </View>
-                  <ScrollView
-                    style={styles.commentList}
-                    contentContainerStyle={styles.commentListContent}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
-                  >
-                    {commentLoadingPostId === commentsOpenForPostId ? <ActivityIndicator color="#00ff7f" style={styles.commentLoading} /> : null}
-                    {operationErrors.comments ? <Text style={styles.commentError}>{operationErrors.comments}</Text> : null}
-                    {(commentsByPost[commentsOpenForPostId] || []).map((c) => (
+                  <View style={styles.commentListWrap}>
+                    <ScrollView
+                      style={styles.commentList}
+                      contentContainerStyle={[styles.commentListContent, { flexGrow: 1 }]}
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={false}
+                      nestedScrollEnabled
+                    >
+                      {commentLoadingPostId === commentsOpenForPostId ? (
+                        <View style={styles.commentLoadingRow}>
+                          <ActivityIndicator color="#00ff7f" />
+                          <Text style={styles.commentLoadingLabel}>Loading comments…</Text>
+                        </View>
+                      ) : null}
+                      {operationErrors.comments ? <Text style={styles.commentError}>{operationErrors.comments}</Text> : null}
+                      {(commentsByPost[commentsOpenForPostId] || []).map((c) => (
                       <View key={c.id} style={styles.commentItem}>
                         <View style={styles.commentTopRow}>
                           <View style={styles.commentAvatar}>
@@ -256,7 +263,8 @@ export default function HomeScreen({ navigation }) {
                         </View>
                       </View>
                     ))}
-                  </ScrollView>
+                    </ScrollView>
+                  </View>
                   <View style={styles.commentInputRow}>
                     <TextInput
                       style={styles.commentInput}
@@ -326,10 +334,11 @@ const styles = StyleSheet.create({
   commentModalOverlay: { flex: 1, justifyContent: 'flex-end' },
   commentModalBackdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
   commentModalPanel: {
+    flex: 1,
     backgroundColor: '#0d0d0d',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    height: '100%',
+    maxHeight: '100%',
     paddingHorizontal: 16,
   },
   commentModalHandle: {
@@ -353,8 +362,10 @@ const styles = StyleSheet.create({
   commentModalPostPreview: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   commentModalPostAuthor: { fontSize: 14, fontWeight: '600', color: '#00ff7f', marginBottom: 4 },
   commentModalPostTitle: { fontSize: 13, color: 'rgba(224,224,224,0.8)' },
+  commentListWrap: { flex: 1, minHeight: 0 },
   commentList: { flex: 1 },
-  commentLoading: { marginBottom: 10 },
+  commentLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  commentLoadingLabel: { color: '#888', fontSize: 14 },
   commentError: { color: '#ff7d7d', marginBottom: 10 },
   commentListContent: { paddingVertical: 12, paddingBottom: 20 },
   commentItem: { marginBottom: 16 },

@@ -10,12 +10,13 @@ import {
   Platform,
   ScrollView,
   useWindowDimensions,
+  ActionSheetIOS,
+  Alert,
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useApp } from '../context/AppContext'
-import { useThemedDialog } from '../context/ThemedDialogContext'
 
 /**
  * Same slide-in account panel as Home (profile photo, username, email, Posts status, Log out).
@@ -26,60 +27,76 @@ export function AccountSidePanel({ visible, onClose, navigation }) {
   const { width: winW } = useWindowDimensions()
   const panelWidth = Math.min(400, Math.round(winW * 0.9))
   const { user, setUser, logout, updateProfile } = useApp()
-  const showThemedDialog = useThemedDialog()
 
   const takeProfilePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync()
-    if (status !== 'granted') {
-      showThemedDialog({
-        title: 'Camera access',
-        message: 'Permission to use the camera is required to take a profile photo.',
-        buttons: [{ text: 'OK', onPress: () => {} }],
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert(
+          'Camera access',
+          'Permission to use the camera is required to take a profile photo.'
+        )
+        return
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
       })
-      return
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    })
-    if (!result.canceled && result.assets[0]) {
-      await updateProfile({ photo: result.assets[0].uri })
+      if (!result.canceled && result.assets[0]) {
+        await updateProfile({ photo: result.assets[0].uri })
+      }
+    } catch (e) {
+      Alert.alert('Camera', e?.message || 'Could not open the camera.')
     }
   }
 
   const pickProfilePhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') {
-      showThemedDialog({
-        title: 'Gallery access',
-        message: 'Permission to access photos is required to choose a profile picture.',
-        buttons: [{ text: 'OK', onPress: () => {} }],
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert(
+          'Gallery access',
+          'Permission to access photos is required to choose a profile picture.'
+        )
+        return
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
       })
-      return
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    })
-    if (!result.canceled && result.assets[0]) {
-      await updateProfile({ photo: result.assets[0].uri })
+      if (!result.canceled && result.assets[0]) {
+        await updateProfile({ photo: result.assets[0].uri })
+      }
+    } catch (e) {
+      Alert.alert('Photos', e?.message || 'Could not open the photo library.')
     }
   }
 
+  /** Native action sheet / alert avoids stacking a second RN Modal on iOS (freezes with ThemedDialog). */
   const handleEditPicture = () => {
-    showThemedDialog({
-      title: 'Profile picture',
-      message: 'Take a new photo or choose from your gallery.',
-      buttons: [
-        { text: 'Take photo', onPress: takeProfilePhoto },
-        { text: 'Choose from gallery', onPress: pickProfilePhoto },
-        { text: 'Cancel', style: 'cancel', onPress: () => {} },
-      ],
-    })
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: 'Profile picture',
+          options: ['Cancel', 'Take photo', 'Choose from gallery'],
+          cancelButtonIndex: 0,
+        },
+        (index) => {
+          if (index === 1) void takeProfilePhoto()
+          else if (index === 2) void pickProfilePhoto()
+        }
+      )
+    } else {
+      Alert.alert('Profile picture', 'Take a new photo or choose from your gallery.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Take photo', onPress: () => void takeProfilePhoto() },
+        { text: 'Choose from gallery', onPress: () => void pickProfilePhoto() },
+      ])
+    }
   }
 
   return (
@@ -96,6 +113,7 @@ export function AccountSidePanel({ visible, onClose, navigation }) {
               paddingBottom: insets.bottom,
             },
           ]}
+          pointerEvents="box-none"
         >
           <ScrollView
             style={styles.panelScroll}
@@ -165,6 +183,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderLeftColor: 'rgba(255,255,255,0.1)',
     zIndex: 2,
+    elevation: 12,
   },
   panelScroll: { flexGrow: 1, flexShrink: 1 },
   panelScrollContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 32, flexGrow: 1 },
